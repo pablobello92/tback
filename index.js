@@ -1,24 +1,20 @@
 /*jshint esversion: 6 */
 
 const express = require('express');
+const morgan = require('morgan');
+const routes = require('./routes');
+const api = require('./api');
+
 const app = express();
 
-const morgan = require('morgan');
+// Middleware: handler de requests HTTP
 app.use(morgan('dev'));
 
-// Routes
+// API
+app.use(api);
 
-app.get('/', (req, res) => {
-    res.end('Hello World!');
-});
-
-app.get('/login', (req, res) => {
-    res.end('Login!');
-});
-
-app.get('*', (req, res) => {
-    res.end('Route not found!');
-});
+// Routing
+app.use(routes);
 
 app.listen(3000, () => {
     console.log('server running at port 3000');
