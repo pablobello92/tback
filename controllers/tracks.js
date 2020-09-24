@@ -27,7 +27,7 @@ const mergeRecords = (newRecord, oldRecord) => {
 // 3: traer tracks de TODOS los usuarios y visualizarlos con colores dependientes (merge) (TODO)
 
 // Lo que hice hasta ahora es un "traer, con colores dependientes, pero sin mergear"
-const mergeTracks = (trackList) => {
+const getTracks = (trackList) => {
     let ranges = [];
     trackList.forEach(track => {
         ranges.push(...track.ranges);
@@ -35,4 +35,4 @@ const mergeTracks = (trackList) => {
     return ranges;
 }
 
-module.exports = mergeTracks;
+module.exports = getTracks;

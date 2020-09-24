@@ -3,7 +3,7 @@ const router = express.Router();
 const User = require('./../models/user');
 const Tracks = require('./../models/track');
 
-const mergeTracks = require('../controllers/tracks');
+const getTracks = require('../controllers/tracks');
 
 router.get('/', (req, res) => {
     res.end();
@@ -25,7 +25,10 @@ router.get('/api/users/', (req, res) => {
 });
 
 // GET Tracks
-router.get('/api/tracks/', (req, res) => {
+/**
+ * If I simply "FETCH ONE TRACK" then this one should be "the best"? or the one that matches some criteria...
+ */
+router.get('/api/tracks', (req, res) => {
     Tracks.findOne({ username: req.query.username})
     .then( tracks => {
         res.send(tracks);
@@ -36,10 +39,14 @@ router.get('/api/tracks/', (req, res) => {
 });
 
 // GET ALL Tracks
-router.get('/api/tracks/getAll/', (req, res) => {
-    Tracks.find({ username: req.query.username}).limit(10)
+// Eso de merge lo puedo hacer con un map dentro de un pipe en el front!
+/**
+ * CURRENTLY IS FETCHING ONLY 10 TRACKS... IT SHOULD FETCH ALL
+ */
+router.get('/api/tracks/getTracksByUserName', (req, res) => {
+    Tracks.find({ username: req.query.username}).limit(2)
     .then( tracks => {
-        res.send(mergeTracks(tracks));
+        res.send(getTracks(tracks));
     })
     .catch( err => {
         console.error(err);
