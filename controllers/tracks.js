@@ -1,19 +1,3 @@
-const fs = require('fs');
-const geolib = require('geolib');
-const _ = require('underscore');
-
-const isBetween = (point, range) => {
-    const length = geolib.getDistance(range.start, range.end);
-    const distanceToStart = geolib.getDistance(range.start, point);
-    const distanceToEnd = geolib.getDistance(range.end, point);
-    return distanceToStart < length && distanceToEnd < length;
-};
-
-const mergeRecords = (newRecord, oldRecord) => {
-    oldRecord.score = (oldRecord.score * .4) + (newRecord.score * .6);
-    oldRecord.date = newRecord.date;
-    oldRecord.accuracy++;
-};
 
 // Es probable que lo que hace el código que me pasaron es:
 // si dos ranges son iguales (lat, long) => los "mergea",
