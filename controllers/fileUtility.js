@@ -1,11 +1,8 @@
-const fs = require('fs');
+/* const fs = require('fs');
 const parse = require('csv-parse');
 const geolib = require('geolib');
 const request = require('request');
 const _ = require('underscore');
-
-
-
 
 const readFromFolder = (folder) => {
 	fs.readdir("data/" + folder, (err, filenames) => {
@@ -100,115 +97,28 @@ const parseTrackFile = (sourceFilePath, done) => {
 	source.pipe(parser);
 }
 
-const isBetween = (point, range) => {
-	let distance = geolib.getDistance(range.start, range.end);
-	let distanceToStart = geolib.getDistance(range.start, point);
-	let distanceToEnd = geolib.getDistance(range.end, point);
-	return distanceToStart < distance && distanceToEnd < distance;
-}
+const writeNewTrackData = (id, trackData) => {
+	let stream = fs.createWriteStream("newData/track" + id + ".csv");
+	stream.once('open', (fd) => {
+		_.each(trackData, (track) => {
 
-const NEW_DATA_WEIGHT = 0.6;
-const mergeRecords(newRecord, oldRecord) => {
-	let oldDataWeight = 1 - NEW_DATA_WEIGHT;
-	oldRecord.score = oldRecord.score * oldDataWeight + newRecord.score * NEW_DATA_WEIGHT;
-	oldRecord.date = newRecord.date;
-	oldRecord.accuracy++;
-}
-
-const mergeTrackData = (trackData, latitude, longitude) => {
-	if (trackData.length == 0) {
-		return;
-	}
-	// get all other records in the same city
-	getCityData(latitude, longitude, (cityData) => {
-		_.each(trackData, (record, index) => {
-			console.log("Checking record");
-			console.log(record);
-			let midpoint = geolib.getCenter([record.start, record.end]);
-			let toJoin = _.find(cityData, (cRecord) => {
-				// find a saved record where the midpoint lies between its start and end
-				return isBetween(midpoint, cRecord);
+			let lines = [];
+			let score = 0;
+			_.each(track.events, (ev, index) => {
+				score += ev.score;
+				lines[index] = "Stability Event;" + index + ";" + ev.startTime + ";" + ev.endTime + ";" + ev.avgX + ";" + ev.avgY + ";" + ev.avgZ + ";" + ev.score + ";" + ev.duration;
 			});
-			// if record exists, merge data and return event
-			if (toJoin) {
-				console.log("Found another record!");
-				console.log(toJoin);
-				mergeRecords(record, toJoin);
-			} else { // if not, add new event
-				// console.log("Adding new record");
-				record.accuracy = 1;
-				cityData.push(record);
-			}
+			let line = track.id + ";" + track.time + ";" + track.start.latitude + ";" + track.start.longitude + ";" +
+				track.end.latitude + ";" + track.end.longitude + ";" + track.speed + ";" +
+				geolib.getDistance(track.start, track.end) + ";" + score;
+			stream.write(line + "\n");
+			_.each(lines, (l) => {
+				stream.write(l + "\n");
+			});
 		});
-		console.log("All merged");
-		app.db.saveObject(city, cityData);
+		stream.end();
 	});
 
-}
-
-let ACC_LEVEL = 3;
-
-const getCityData = (latitude, longitude, callback) => {
-	getCityName(latitude, longitude, (city) => {
-		let data = app.db.getObject(city);
-		callback(data ? data : []);
-	});
-}
-
-const analiseFiles = () => {
-	let tracksInfo = fs.readFileSync('data/tracks_info.csv').toString().split("\n");
-	_.each(tracksInfo, (trackInfo) => {
-		let trackName = trackInfo.split(";")[0];
-		console.log(trackName);
-		analiseTrack(trackName);
-	});
-}
-
-const analiseTrack = (track) => {
-	let id = track.replace("track", "");
-	let source = fs.createReadStream("data/track" + id + ".csv");
-
-	let linesRead = 0;
-	let trackData = [];
-	let columns = ["counter", "time", "startLat", "startLon", "endLat", "endLon", "speed", "stbAvg", "phAmnt", "phAvg", "maxPh", "bmpAmnt", "bmpAvg", "maxBmp"];
-
-	let parser = parse({
-		delimiter: ';',
-		columns: columns
-	});
-
-	parser.on("readable", () => {
-		let record = null;
-		while (record = parser.read()) {
-			linesRead++;
-			trackData.push({
-				id: record.counter,
-				time: record.time,
-				start: {
-					latitude: record.startLat,
-					longitude: record.startLon
-				},
-				end: {
-					latitude: record.endLat,
-					longitude: record.endLon
-				},
-				speed: record.speed,
-				events: []
-
-			});
-
-		}
-	});
-
-	parser.on("error", (error) => {
-		console.log(error);
-	});
-
-	parser.on("end", () => {
-		analiseAccelerometer(id, trackData);
-	});
-
-	source.pipe(parser);
 }
 
 const analiseAccelerometer = (id, trackData) => {
@@ -318,82 +228,59 @@ const analiseAccelerometer = (id, trackData) => {
 	source.pipe(parser);
 }
 
-const writeNewTrackData = (id, trackData) => {
-	let stream = fs.createWriteStream("newData/track" + id + ".csv");
-	stream.once('open', (fd) => {
-		_.each(trackData, (track) => {
+const analiseTrack = (track) => {
+	let id = track.replace("track", "");
+	let source = fs.createReadStream("data/track" + id + ".csv");
 
-			let lines = [];
-			let score = 0;
-			_.each(track.events, (ev, index) => {
-				score += ev.score;
-				lines[index] = "Stability Event;" + index + ";" + ev.startTime + ";" + ev.endTime + ";" + ev.avgX + ";" + ev.avgY + ";" + ev.avgZ + ";" + ev.score + ";" + ev.duration;
-			});
-			let line = track.id + ";" + track.time + ";" + track.start.latitude + ";" + track.start.longitude + ";" +
-				track.end.latitude + ";" + track.end.longitude + ";" + track.speed + ";" +
-				geolib.getDistance(track.start, track.end) + ";" + score;
-			stream.write(line + "\n");
-			_.each(lines, (l) => {
-				stream.write(l + "\n");
-			});
-		});
-		stream.end();
+	let linesRead = 0;
+	let trackData = [];
+	let columns = ["counter", "time", "startLat", "startLon", "endLat", "endLon", "speed", "stbAvg", "phAmnt", "phAvg", "maxPh", "bmpAmnt", "bmpAvg", "maxBmp"];
+
+	let parser = parse({
+		delimiter: ';',
+		columns: columns
 	});
 
+	parser.on("readable", () => {
+		let record = null;
+		while (record = parser.read()) {
+			linesRead++;
+			trackData.push({
+				id: record.counter,
+				time: record.time,
+				start: {
+					latitude: record.startLat,
+					longitude: record.startLon
+				},
+				end: {
+					latitude: record.endLat,
+					longitude: record.endLon
+				},
+				speed: record.speed,
+				events: []
+
+			});
+
+		}
+	});
+
+	parser.on("error", (error) => {
+		console.log(error);
+	});
+
+	parser.on("end", () => {
+		analiseAccelerometer(id, trackData);
+	});
+
+	source.pipe(parser);
 }
 
-const getSavedCityName = (lat, lon) => {
-	let cities = app.db.getObject("cities");
-	if (cities) {
-		let city = _.find(cities, (location, name) => {
-			let distance = geolib.getDistance({
-				latitude: lat,
-				longitude: lon
-			}, location) / 1000;
-			return distance < 100;
-		});
-		if (city) {
-			console.log("Found cached city " + city);
-			return city;
-		}
-	}
-	return null;
-}
-
-
-const getCityName = (lat, lon, callback) => {
-	//find the city on nearby cities
-	let city = getSavedCityName(lat, lon);
-	if (city) {
-		callback(city);
-		return;
-	}
-	console.log("City not found, checking geocode service");
-	let url = 'https://maps.googleapis.com/maps/api/geocode/json?key=GOOGLEKEY&latlng=LATCOORD,LONCOORD&sensor=true';
-	url = url.replace("LATCOORD", lat);
-	url = url.replace("LONCOORD", lon);
-	url = url.replace("GOOGLEKEY", "AIzaSyCvExvJQhQ4H8BOL790oGljb10nKzdWj5A");
-	request(url, (error, response, body) => {
-		city = null;
-		let bparsed = JSON.parse(response.body);
-		if (bparsed) {
-			let address = bparsed.results[0].address_components;
-			for (let i = 0; i < address.length && !city; i++) {
-				if (address[i].types[0] == "locality") {
-					city = address[i].long_name;
-
-				}
-			}
-		}
-		let cities = app.db.getObject("cities");
-		if (!cities) {
-			cities = [];
-		}
-		cities[city] = {
-			latitude: lat,
-			longitude: lon
-		};
-		app.db.saveObject("cities", cities);
-		callback(city);
+const analiseFiles = () => {
+	let tracksInfo = fs.readFileSync('data/tracks_info.csv').toString().split("\n");
+	_.each(tracksInfo, (trackInfo) => {
+		let trackName = trackInfo.split(";")[0];
+		console.log(trackName);
+		analiseTrack(trackName);
 	});
 }
+ */
