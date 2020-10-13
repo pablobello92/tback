@@ -4,6 +4,9 @@ const User = require('./../models/user');
 const Tracks = require('./../models/track');
 const Cities = require('./../models/city');
 
+const predictRoads = require('./../controllers/predictor');
+
+
 /**
  * TODO refactor in controllers!
  */
@@ -29,24 +32,41 @@ router.get('/api/users/', (req, res) => {
     });
 });
 
-/**
- * GET 10 Tracks by user_name
- * TODO add city filter
- * TODO add pagination
- */
-router.get('/api/tracks/getTracksByUserName', (req, res) => {
+router.get('/api/tracks/getUserTracks', (req, res) => {
     const filter = {
         username: req.query.username,
-        city: req.query.city,
+        city: req.query.city
     };
-    Tracks.find(filter).limit(10)
+    Tracks.find(filter).sort([['startTime', -1]]).limit(parseInt(req.query.pages))
     .then(tracks => {
-        res.send(getTracks(tracks));
+        res.send(tracks);
     })
     .catch(err => {
         console.error(err);
     });
 });
+
+router.get('/api/tracks/sumarize', (req, res) => {
+    const filter = {
+        username: 'pablo_bello',
+        city: 'Tandil'
+    };
+    Tracks.find(filter).sort([['startTime', -1]]).limit(2)
+    .then(tracks => {
+        debugger
+    })
+});
+
+
+router.get('/api/predictions/roadTypes', (req, res) => {
+    predictRoads()
+    .then(response => {
+        res.send(response);
+    });
+});
+
+
+
 
 
 router.get('/api/cities/', (req, res) => {
@@ -59,9 +79,6 @@ router.get('/api/cities/', (req, res) => {
         console.error(err);
     });
 });
-
-// TODO: UPDATE User
-
 
 router.get('*', (req, res) => {
     res.end('Route not found!');

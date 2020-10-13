@@ -1,6 +1,4 @@
 
-const fs = require('fs');
-const parse = require('csv-parse');
 const geolib = require('geolib');
 const request = require('request');
 const _ = require('underscore');
