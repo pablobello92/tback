@@ -57,7 +57,6 @@ router.get('/api/tracks/sumarize', (req, res) => {
     })
 });
 
-
 router.get('/api/predictions/roadTypes', (req, res) => {
     predictRoads()
     .then(response => {
@@ -65,14 +64,9 @@ router.get('/api/predictions/roadTypes', (req, res) => {
     });
 });
 
-
-
-
-
 router.get('/api/cities/', (req, res) => {
     Cities.find()
     .then(cities => {
-        console.log(cities);
         res.send(cities);
     })
     .catch(err => {
