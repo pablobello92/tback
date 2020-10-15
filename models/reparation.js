@@ -5,16 +5,16 @@ const reparationSchema = new Schema({
     _id: mongoose.Schema.Types.ObjectId,
     startTime: Number,
     city: String,
-    start: {
+    from: {
         lat: Number,
         lng: Number
     },
-    end: {
+    to: {
         lat: Number,
         lng: Number
     },
 });
 
-const Reparation = mongoose.Schema('Reparation', reparationSchema);
+const Reparation = mongoose.model('Reparation', reparationSchema, 'reparations');
 
 module.exports = Reparation;

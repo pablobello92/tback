@@ -3,6 +3,44 @@ const request = require('request'); // use a simple HTTP call instead
 const _ = require('underscore');
 
 
+const sumarizeTracks = () => {
+	// const results = [];
+	//const cities = getAllCities()
+
+	// Store each one of the objects
+	//results.foreEach(res => saveInDatabase(res));
+}
+
+const sumarizeTracksByCity = (city) => {
+	
+	// const tracks = getTracksByCity(city);
+
+	// let sumarized = [];
+	/*
+		const segments = getSegments(tracks);
+	*/
+
+	/*const result = {
+		city: city,
+		segments: sumarized
+
+	};*/
+	// return result;
+}
+
+const getSegments = (tracks) => {
+	// const segments = tracks.map(track => ...(track.segments))
+	// return discardRepairedSegments(segments);
+}
+
+const discardRepairedSegments = (segments) => {
+	
+}
+
+
+
+
+
 const NEW_DATA_WEIGHT = 0.6;
 
 const isBetween = (point, range) => {
