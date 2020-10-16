@@ -598,7 +598,7 @@ const sample = [[
     [-0.03830719]]
 ]];
 
-async function predictRoads() {
+const predictRoads = async() => {
     console.clear();
     const loadedModel = await tf.loadLayersModel('file://assets/tensorFlowCore/roads/model.json');
     const tensor = tf.tensor4d(sample);
@@ -612,4 +612,20 @@ async function predictRoads() {
     }     
 }
 
-module.exports = predictRoads
+const predictRoadsCallback = (req, res) => {
+    predictRoads()
+    .then(response => {
+        res.send(response);
+    }, error => {
+        console.log('there was an error.');
+        res.send(error);
+    });
+};
+
+const predictAnomaliesCallback = (req, res) => {
+    res.send(["anomalies predicted!"]); 
+};
+
+
+
+module.exports = [ predictRoadsCallback, predictAnomaliesCallback ];
