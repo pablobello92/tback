@@ -1,19 +1,34 @@
 const geolib = require('geolib');
-const request = require('request'); // use a simple HTTP call instead
 const _ = require('underscore');
 
+const Tracks = require('./../models/track');
+const Cities = require('./../models/city');
 
-const sumarizeTracks = () => {
-	// const results = [];
-	//const cities = getAllCities()
 
+const sumarizeTracks = async() => {
+	console.clear();
+	const results = [];
+	const cities = Cities.find()
+    .then(cities => {
+        cities.forEach((city) => {
+			const tracksByCity = sumarizeTracksByCity(city.name)
+			.then(tracks => {
+				console.log(tracks);
+				console.log('-----------------------------');
+			});
+		});
+    })
+    .catch(err => {
+        console.error(err);
+	})
+	return [0];
 	// Store each one of the objects
 	//results.foreEach(res => saveInDatabase(res));
 }
 
 const sumarizeTracksByCity = (city) => {
-	
-	// const tracks = getTracksByCity(city);
+	return Tracks.find({city: city}).limit(5)
+    .then(tracks => tracks.map(track => track.city));
 
 	// let sumarized = [];
 	/*
@@ -36,6 +51,8 @@ const getSegments = (tracks) => {
 const discardRepairedSegments = (segments) => {
 	
 }
+
+module.exports = sumarizeTracks;
 
 
 

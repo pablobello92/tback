@@ -6,6 +6,7 @@ const Cities = require('./../models/city');
 const Reparations = require('../models/reparation');
 
 const predictRoads = require('./../controllers/predictor');
+const sumarizeTracks = require('./../controllers/sumarizer');
 
 // TODO REFACTOR ALL THESE ENDPOINTS
 
@@ -33,8 +34,10 @@ router.get('/api/users/', (req, res) => {
 router.get('/api/tracks/getUserTracks', (req, res) => {
     const filter = {
         username: req.query.username,
-        city: req.query.city
+        city: req.query.city,
+        startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
     };
+    console.log(filter);
     Tracks.find(filter).sort([['startTime', -1]]).limit(parseInt(req.query.pages))
     .then(tracks => {
         res.send(tracks);
@@ -45,13 +48,9 @@ router.get('/api/tracks/getUserTracks', (req, res) => {
 });
 
 router.get('/api/tracks/sumarize', (req, res) => {
-    const filter = {
-        username: 'pablo_bello',
-        city: 'Tandil'
-    };
-    Tracks.find(filter).sort([['startTime', -1]]).limit(2)
-    .then(tracks => {
-        debugger
+    sumarizeTracks()
+    .then(result => {
+        res.send(result);
     })
 });
 
