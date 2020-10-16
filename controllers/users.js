@@ -1,6 +1,8 @@
 
+const Users = require('./../models/user');
+
 const getUserCallback = (req, res) => {
-    User.findOne({ username: req.query.username})
+    Users.findOne({ username: req.query.username})
     .then( user => {
         res.send(user);
     })
