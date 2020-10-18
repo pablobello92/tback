@@ -1,3 +1,5 @@
+export {};
+
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -57,6 +59,6 @@ const trackSchema = new Schema({
     }]
 });
 
-var Track = mongoose.model('Track', trackSchema);
+const Track = mongoose.model('Track', trackSchema);
 
 module.exports = Track;
