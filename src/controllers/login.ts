@@ -1,4 +1,4 @@
-
+export {};
 
 const loginCallBack = (req, res) => {
     res.send(["Login"]);

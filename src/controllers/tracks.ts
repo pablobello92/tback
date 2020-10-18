@@ -1,10 +1,12 @@
+export {};
+
 const geolib = require('geolib');
 const _ = require('underscore');
 
 const Tracks = require('./../models/track');
 const Cities = require('./../models/city');
 
-const getTracksCallback = (req, res) => {
+const getTracksCallback = (req, res): void => {
     const filter = {
         username: req.query.username,
         city: req.query.city
@@ -21,7 +23,7 @@ const getTracksCallback = (req, res) => {
 };
 
 
-const sumarizeTracksCallback = async() => {
+const sumarizeTracksCallback = async(): Promise<number[]> => {
 	console.clear();
 	const results = [];
 	const cities = Cities.find()
@@ -42,7 +44,7 @@ const sumarizeTracksCallback = async() => {
 	//results.foreEach(res => saveInDatabase(res));
 }
 
-const sumarizeTracksByCity = (city) => {
+const sumarizeTracksByCity = (city): Promise<any[]> => {
 	return Tracks.find({city: city}).limit(5)
     .then(tracks => tracks.map(track => track.city));
 
@@ -69,21 +71,21 @@ const discardRepairedSegments = (segments) => {
 }
 const NEW_DATA_WEIGHT = 0.6;
 
-const isBetween = (point, range) => {
+const isBetween = (point, range): boolean => {
 	let distance = geolib.getDistance(range.start, range.end);
 	let distanceToStart = geolib.getDistance(range.start, point);
 	let distanceToEnd = geolib.getDistance(range.end, point);
 	return distanceToStart < distance && distanceToEnd < distance;
 }
 
-const mergeRecords = (newRecord, oldRecord) => {
+const mergeRecords = (newRecord, oldRecord): void => {
 	let oldDataWeight = 1 - NEW_DATA_WEIGHT;
 	oldRecord.score = oldRecord.score * oldDataWeight + newRecord.score * NEW_DATA_WEIGHT;
 	oldRecord.date = newRecord.date;
 	oldRecord.accuracy++;
 }
 
-const mergeTrackData = (trackData, latitude, longitude) => {
+/*const mergeTrackData = (trackData, latitude, longitude) => {
 	if (trackData.length == 0) {
 		return;
 	}
@@ -113,6 +115,6 @@ const mergeTrackData = (trackData, latitude, longitude) => {
 		// Here goes my own function to save the data
 		app.db.saveObject(city, cityData);
 	});
-}
+}*/
 
-module.exports = [ getTracksCallback, sumarizeTracksCallback]
+module.exports = [ getTracksCallback, sumarizeTracksCallback];

@@ -1,6 +1,8 @@
+export {};
+
 const Cities = require('./../models/city');
 
-const getCitiesCallback = (req, res) => {
+const getCitiesCallback = (req, res): void => {
     Cities.find()
     .then(cities => {
         res.send(cities);
