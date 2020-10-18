@@ -1,17 +1,16 @@
-/*jshint esversion: 6 */
-
+export {};
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const routes = require('./routes/api');
 
-const listenCallback = () => {
+const listenCallback = (): void => {
     console.log('--------------------------------');
     console.log(`Server running at port 8000`);
     console.log('--------------------------------');
 };
 
-const addHeadersCallback = (req, res, next) => {
+const addHeadersCallback = (req, res, next): void => {
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
     // Request methods you wish to allow
