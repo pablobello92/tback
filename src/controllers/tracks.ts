@@ -7,46 +7,100 @@ const Tracks = require('./../models/track');
 const Cities = require('./../models/city');
 
 const getTracksCallback = (req, res): void => {
-    const filter = {
-        username: req.query.username,
-        city: req.query.city
-        // startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
-    };
-    console.log(filter);
-    Tracks.find(filter).sort([['startTime', -1]]).limit(parseInt(req.query.pages))
-    .then(tracks => {
-        res.send(tracks);
-    })
-    .catch(err => {
-        console.error(err);
-    });
+	const filter = {
+		username: req.query.username,
+		city: req.query.city
+		// startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
+	};
+	getTracksByFilter(filter, parseInt(req.query.pages))
+		.then(tracks => {
+			res.send(tracks);
+		})
+		.catch(err => {
+			console.error(err);
+		});
 };
 
-
-const sumarizeTracksCallback = async(): Promise<number[]> => {
-	console.clear();
-	const results = [];
-	const cities = Cities.find()
-    .then(cities => {
-        cities.forEach((city) => {
-			const tracksByCity = sumarizeTracksByCity(city.name)
-			.then(tracks => {
-				console.log(tracks);
-				console.log('-----------------------------');
-			});
-		});
-    })
-    .catch(err => {
-        console.error(err);
-	})
-	return [0];
-	// Store each one of the objects
-	//results.foreEach(res => saveInDatabase(res));
+const getTracksByFilter = async (filter: {}, pages: number) => {
+	console.log(filter);
+	try {
+		const tracks: any[] = await Tracks.find(filter).sort([
+			['startTime', -1]
+		]).limit(pages)
+		if (!tracks) {
+			return [];
+		}
+		return tracks;
+	} catch (error) {
+		throw new Error("Error getting the Tracks");
+	}
 }
 
-const sumarizeTracksByCity = (city): Promise<any[]> => {
-	return Tracks.find({city: city}).limit(5)
-    .then(tracks => tracks.map(track => track.city));
+const getCityNames = async() => {
+	try {
+		const cities = await Cities.find()
+		if(!cities) {
+			return [];
+		}
+		return cities.map(city => city.name);
+	} catch(error) {
+		throw new Error("error getting the cities");
+	}
+}
+
+const getTracksByCity = async(cityName: string) => {
+	try {
+		const tracks: any[] = await Tracks.find({city: cityName}).limit(2)
+		if(!tracks) {
+			return [];
+		}
+		const result = tracks.map(track => {
+			return {
+				startTime: track.startTime,
+				ranges: track.ranges
+			};
+		});
+		return result;
+	} catch(error) {
+		throw new Error("error getting the cities");
+	}
+}
+
+
+const sumarizeTracksCallback = (req, res): void => {
+	getCityNames()
+		.then((cityNames: string[]) => {
+			let result = [];
+			cityNames.forEach(cityName => {
+				result.push(getTracksByCity(cityName))
+			});
+			Promise.all(result)
+			.then(tracks => {
+				const objects = tracks.map((tracks, index) => {
+					return {
+						city: cityNames[index],
+						tracks
+					};
+				});
+				return objects;
+			})
+			.then(objects => {
+				res.send(objects);
+			})
+			.catch(error => {
+				throw error;
+			});
+		})
+		.catch(error => {
+			throw error;
+		});
+}
+
+const sumarizeTracksByCity = (city): Promise < string[] > => {
+	return Tracks.find({
+			city: city
+		}).limit(5)
+		.then(tracks => tracks.map(track => track.city));
 
 	// let sumarized = [];
 	/*
@@ -67,7 +121,7 @@ const getSegments = (tracks) => {
 }
 
 const discardRepairedSegments = (segments) => {
-	
+
 }
 const NEW_DATA_WEIGHT = 0.6;
 
@@ -117,4 +171,4 @@ const mergeRecords = (newRecord, oldRecord): void => {
 	});
 }*/
 
-module.exports = [ getTracksCallback, sumarizeTracksCallback];
+module.exports = [getTracksCallback, sumarizeTracksCallback];
