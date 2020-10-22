@@ -26,7 +26,8 @@ const addHeadersCallback = (req, res, next): void => {
 
 mongoose.connect('mongodb://localhost:27017/db_tesis', { useNewUrlParser: true, useUnifiedTopology: true });
 const app = express();
-app.use(bodyParser.json());
+app.use(bodyParser.json({limit: '200mb'}));
+app.use(bodyParser.urlencoded({limit: '200mb', extended: true}));
 app.use(addHeadersCallback);
 app.use(routes);
 app.listen(8000, listenCallback);

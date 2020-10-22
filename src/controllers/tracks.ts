@@ -4,6 +4,7 @@ const geolib = require('geolib');
 const _ = require('underscore');
 
 const Tracks = require('./../models/track');
+const Sumarizations = require('./../models/sumarization');
 const Cities = require('./../models/city');
 
 const getTracksCallback = (req, res): void => {
@@ -15,6 +16,7 @@ const getTracksCallback = (req, res): void => {
 	getTracksByFilter(filter, parseInt(req.query.pages))
 		.then(tracks => {
 			res.send(tracks);
+			res.end();
 		})
 		.catch(err => {
 			console.error(err);
@@ -26,7 +28,7 @@ const getTracksByFilter = async (filter: {}, pages: number) => {
 	try {
 		const tracks: any[] = await Tracks.find(filter).sort([
 			['startTime', -1]
-		]).limit(pages)
+		])
 		if (!tracks) {
 			return [];
 		}
@@ -35,6 +37,19 @@ const getTracksByFilter = async (filter: {}, pages: number) => {
 		throw new Error("Error getting the Tracks");
 	}
 }
+
+
+const putSumarizationsCallback = (req, res): void => {
+    Sumarizations.insertMany(req.body)
+    .then(res => {
+		res.send(res);
+		res.end();
+    })
+    .catch(error => {
+		res.send(error);
+		res.end();
+    });
+};
 
 const getCityNames = async() => {
 	try {
@@ -50,7 +65,7 @@ const getCityNames = async() => {
 
 const getTracksByCity = async(cityName: string) => {
 	try {
-		const tracks: any[] = await Tracks.find({city: cityName}).limit(2)
+		const tracks: any[] = await Tracks.find({city: cityName}).limit(5)
 		if(!tracks) {
 			return [];
 		}
@@ -86,6 +101,7 @@ const sumarizeTracksCallback = (req, res): void => {
 			})
 			.then(objects => {
 				res.send(objects);
+				res.end();
 			})
 			.catch(error => {
 				throw error;
@@ -96,49 +112,9 @@ const sumarizeTracksCallback = (req, res): void => {
 		});
 }
 
-const sumarizeTracksByCity = (city): Promise < string[] > => {
-	return Tracks.find({
-			city: city
-		}).limit(5)
-		.then(tracks => tracks.map(track => track.city));
-
-	// let sumarized = [];
-	/*
-		const segments = getSegments(tracks);
-	*/
-
-	/*const result = {
-		city: city,
-		segments: sumarized
-
-	};*/
-	// return result;
-}
-
-const getSegments = (tracks) => {
-	// const segments = tracks.map(track => ...(track.segments))
-	// return discardRepairedSegments(segments);
-}
-
 const discardRepairedSegments = (segments) => {
 
 }
-const NEW_DATA_WEIGHT = 0.6;
-
-const isBetween = (point, range): boolean => {
-	let distance = geolib.getDistance(range.start, range.end);
-	let distanceToStart = geolib.getDistance(range.start, point);
-	let distanceToEnd = geolib.getDistance(range.end, point);
-	return distanceToStart < distance && distanceToEnd < distance;
-}
-
-const mergeRecords = (newRecord, oldRecord): void => {
-	let oldDataWeight = 1 - NEW_DATA_WEIGHT;
-	oldRecord.score = oldRecord.score * oldDataWeight + newRecord.score * NEW_DATA_WEIGHT;
-	oldRecord.date = newRecord.date;
-	oldRecord.accuracy++;
-}
-
 /*const mergeTrackData = (trackData, latitude, longitude) => {
 	if (trackData.length == 0) {
 		return;
@@ -171,4 +147,4 @@ const mergeRecords = (newRecord, oldRecord): void => {
 	});
 }*/
 
-module.exports = [getTracksCallback, sumarizeTracksCallback];
+module.exports = [getTracksCallback, sumarizeTracksCallback, putSumarizationsCallback];
