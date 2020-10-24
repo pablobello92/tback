@@ -6,54 +6,21 @@ const Schema = mongoose.Schema;
 const sumarizationSchema = new Schema({
     _id: mongoose.Schema.Types.ObjectId,
     city: String,
+    date: Number,
     ranges: [{
-        _id: String,
-        id: Number,
-        date: Number,
+        date: Number, // Remove dates!!!!
         start: {
-            latitude: Number,
-            longitude: Number
+            lat: Number,
+            lng: Number
         },
         end: {
-            latitude: Number,
-            longitude: Number
+            lat: Number,
+            lng: Number
         },
-        speed: Number,
         score: Number,
-        stabilityEvents: [{
-            id: Number,
-            startTime: Number,
-            endTime: Number,
-            xavg: Number,
-            yavg: Number,
-            zavg: Number,
-            score: Number,
-            duration: Number
-        }],
-        distance: Number
+        distance: Number,
+        accuracy: Number
     }],
-    accelerometers: [{
-        id: Number,
-        eventId: Number,
-        currentTime: Number,
-        x: {
-            raw: Number,
-            delta: Number,
-            diff: Number
-        },
-        y: {
-            raw: Number,
-            delta: Number,
-            diff: Number
-        },
-        z: {
-            raw: Number,
-            delta: Number,
-            diff: Number
-        },
-        axis: String
-    }],
-    accuracy: Number
 });
 
 const Sumarization = mongoose.model('Sumarizations', sumarizationSchema, 'sumarizations');
