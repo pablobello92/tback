@@ -1,8 +1,9 @@
 export {};
+import api from './routes/api'
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const routes = require('./routes/api');
+const app = express();
 
 const listenCallback = (): void => {
     console.log('--------------------------------');
@@ -25,11 +26,11 @@ const addHeadersCallback = (req, res, next): void => {
 };
 
 mongoose.connect('mongodb://localhost:27017/db_tesis', { useNewUrlParser: true, useUnifiedTopology: true });
-const app = express();
+
 app.use(bodyParser.json());
 /* app.use(bodyParser.json({limit: '200mb'}));
 app.use(bodyParser.urlencoded({limit: '200mb', extended: true})); */
 app.use(addHeadersCallback);
-app.use(routes);
+app.use(api);
 app.listen(8000, listenCallback);
 

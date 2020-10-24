@@ -12,7 +12,7 @@ const [ getReparationsCallback, putReparationCallback ] = require('../controller
 const [ predictRoadsCallback, predictAnomaliesCallback ] = require('../controllers/predictions');
 
 router.get('/', indexCallback);
-router.get('/api/login', loginCallBack);
+router.post('/api/login', loginCallBack);
 router.get('/api/users', getUserCallback );
 router.put('/api/users/update', updateUserCallback );
 router.get('/api/cities/', getCitiesCallback);
@@ -27,4 +27,4 @@ router.get('/api/predictions/anomalies', predictAnomaliesCallback);
 
 router.get('*', notFoundCallback);
 
-module.exports = router;
+export default router;
