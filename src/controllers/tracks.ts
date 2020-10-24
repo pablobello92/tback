@@ -7,22 +7,6 @@ const Tracks = require('./../models/track');
 const Sumarizations = require('./../models/sumarization');
 const Cities = require('./../models/city');
 
-const getTracksCallback = (req, res): void => {
-	const filter = {
-		username: req.query.username,
-		city: req.query.city
-		// startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
-	};
-	getTracksByFilter(filter, parseInt(req.query.pages))
-		.then(tracks => {
-			res.send(tracks);
-			res.end();
-		})
-		.catch(err => {
-			console.error(err);
-		});
-};
-
 const getTracksByFilter = async (filter: {}, pages: number) => {
 	console.log(filter);
 	try {
@@ -38,17 +22,65 @@ const getTracksByFilter = async (filter: {}, pages: number) => {
 	}
 }
 
+const getTracksCallback = (req, res): void => {
+	const filter = {
+		username: req.query.username,
+		city: req.query.city
+		// startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
+	};
+	getTracksByFilter(filter, parseInt(req.query.pages))
+		.then(result => {
+			res.send(result);
+			res.end();
+		})
+		.catch(err => {
+			console.error(err);
+		});
+};
+
+const getSumarizationsByFilter = async (filter: {}) => {
+	try {
+		const sumarizations: any[] = await Sumarizations.find(filter)
+		if (!sumarizations) {
+			return [];
+		}
+		return sumarizations;
+	} catch (error) {
+		throw new Error("Error getting the Sumarizations");
+	}
+}
+
+const getSumarizationsCallback = (req, res): void => {
+	const filter = {
+		city: req.query.city
+		// startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
+	};
+	getSumarizationsByFilter(filter)
+		.then(result => {
+			res.send(result);
+		})
+		.catch(err => {
+			console.error(err);
+			res.send(err);
+		});
+};
 
 const putSumarizationsCallback = (req, res): void => {
-    Sumarizations.insertMany(req.body)
-    .then(res => {
-		res.send(res);
-		res.end();
-    })
-    .catch(error => {
+	Sumarizations.deleteMany({})
+	.then(response => {
+		Sumarizations.insertMany(req.body)
+		.then(res => {
+			res.send(res);
+		})
+		.catch(err => {
+			res.send(err);
+		});
+	})
+	.catch(error => {
 		res.send(error);
 		res.end();
-    });
+	});
+    
 };
 
 const getCityNames = async() => {
@@ -115,36 +147,4 @@ const sumarizeTracksCallback = (req, res): void => {
 const discardRepairedSegments = (segments) => {
 
 }
-/*const mergeTrackData = (trackData, latitude, longitude) => {
-	if (trackData.length == 0) {
-		return;
-	}
-	// get all other records in the same city
-	getCityData(latitude, longitude, (cityData) => {
-		_.each(trackData, (record, index) => {
-			console.log("Checking record");
-			console.log(record);
-			let midpoint = geolib.getCenter([record.start, record.end]);
-			let toJoin = _.find(cityData, (cRecord) => {
-				// find a saved record where the midpoint lies between its start and end
-				return isBetween(midpoint, cRecord);
-			});
-			// if record exists, merge data and return event
-			if (toJoin) {
-				console.log("Found another record!");
-				console.log(toJoin);
-				mergeRecords(record, toJoin);
-			} else { // if not, add new event
-				// console.log("Adding new record");
-				record.accuracy = 1;
-				cityData.push(record);
-			}
-		});
-		console.log("All merged");
-
-		// Here goes my own function to save the data
-		app.db.saveObject(city, cityData);
-	});
-}*/
-
-module.exports = [getTracksCallback, sumarizeTracksCallback, putSumarizationsCallback];
+module.exports = [getTracksCallback, getSumarizationsCallback, sumarizeTracksCallback, putSumarizationsCallback];

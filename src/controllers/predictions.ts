@@ -618,7 +618,7 @@ const predictRoadsCallback = (req, res) => {
     .then(response => {
         res.send(response);
     }, error => {
-        console.log('there was an error.');
+        console.error(error);
         res.send(error);
     });
 };
