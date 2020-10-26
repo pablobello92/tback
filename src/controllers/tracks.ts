@@ -7,28 +7,25 @@ const Tracks = require('./../models/track');
 const Sumarizations = require('./../models/sumarization');
 const Cities = require('./../models/city');
 
-const getTracksByFilter = async (filter: {}, pages: number) => {
-	console.log(filter);
+const getTracksByFilter = async (filter: {}, offset: number, pages: number) => {
 	try {
-		const tracks: any[] = await Tracks.find(filter).sort([
-			['startTime', -1]
-		])
+		const tracks: any[] = await Tracks.find(filter).sort([['startTime', -1]]).skip(offset).limit(pages);
 		if (!tracks) {
 			return [];
 		}
 		return tracks;
 	} catch (error) {
-		throw new Error("Error getting the Tracks");
+		throw new Error(error);
 	}
 }
 
 const getTracksCallback = (req, res): void => {
 	const filter = {
 		username: req.query.username,
-		city: req.query.city
-		// startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
+		city: req.query.city,
+		startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
 	};
-	getTracksByFilter(filter, parseInt(req.query.pages))
+	getTracksByFilter(filter, parseInt(req.query.offset), parseInt(req.query.pages))
 		.then(result => {
 			res.send(result);
 			res.end();
@@ -53,7 +50,6 @@ const getSumarizationsByFilter = async (filter: {}) => {
 const getSumarizationsCallback = (req, res): void => {
 	const filter = {
 		city: req.query.city
-		// startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
 	};
 	getSumarizationsByFilter(filter)
 		.then(result => {
