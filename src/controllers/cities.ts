@@ -3,7 +3,7 @@ export {};
 import City from './../models/city';
 
 const getCitiesCallback = (req, res): void => {
-    City.find()
+    City.find({})
     .then(cities => {
         res.send(cities);
     })
