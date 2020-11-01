@@ -1,12 +1,11 @@
 export {};
+import Reparation from './../models/reparation';
 
-const Reparations = require('../models/reparation');
-
-const getReparationsCallback = (req, res): void => {
+export const getReparationsCallback = (req, res): void => {
     const filter = {
         city: req.query.city
     };
-    Reparations.find(filter)
+    Reparation.find(filter)
     .then(reparations => {
         res.send(reparations);
     })
@@ -15,14 +14,12 @@ const getReparationsCallback = (req, res): void => {
     });
 };
 
-const putReparationCallback = (req, res): void => {
-    Reparations.insertMany([req.body])
-    .then(res => {
-        res.send(res)
+export const putReparationCallback = (req, res): void => {
+    Reparation.insertMany([req.body])
+    .then(response => {
+        res.send(response)
     })
     .catch(error => {
         res.send(error);
     });
 };
-
-module.exports = [ getReparationsCallback, putReparationCallback ];
