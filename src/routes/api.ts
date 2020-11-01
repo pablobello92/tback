@@ -23,7 +23,6 @@ router.get('/api/reparations', getReparationsCallback);
 router.put('/api/reparations/insert', putReparationCallback);
 router.get('/api/predictions/roadTypes', predictRoadsCallback);
 router.get('/api/predictions/anomalies', predictAnomaliesCallback);
-
 router.get('*', notFoundCallback);
 
 export default router;
