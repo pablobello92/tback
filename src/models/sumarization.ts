@@ -1,10 +1,9 @@
 export {};
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import { Schema, model } from 'mongoose';
 
 const sumarizationSchema = new Schema({
-    _id: mongoose.Schema.Types.ObjectId,
+    _id: Schema.Types.ObjectId,
     city: String,
     date: Number,
     ranges: [{
@@ -23,6 +22,6 @@ const sumarizationSchema = new Schema({
     }],
 });
 
-const Sumarization = mongoose.model('Sumarizations', sumarizationSchema, 'sumarizations');
+const Sumarization = model('Sumarizations', sumarizationSchema, 'sumarizations');
 
-module.exports = Sumarization;
+export default Sumarization;

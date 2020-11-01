@@ -1,15 +1,14 @@
 export {};
+import * as geolib from 'geolib';
+import * as _ from 'underscore';
 
-const geolib = require('geolib');
-const _ = require('underscore');
-
-const Tracks = require('./../models/track');
-const Sumarizations = require('./../models/sumarization');
-const Cities = require('./../models/city');
+import Track from './../models/track';
+import Sumarization from './../models/sumarization';
+import City from './../models/city';
 
 const getTracksByFilter = async (filter: {}, offset: number, pages: number) => {
 	try {
-		const tracks: any[] = await Tracks.find(filter).sort([['startTime', -1]]).skip(offset).limit(pages);
+		const tracks: any[] = await Track.find(filter).sort([['startTime', -1]]).skip(offset).limit(pages);
 		if (!tracks) {
 			return [];
 		}
@@ -33,11 +32,11 @@ const getTracksCallback = (req, res): void => {
 		.catch(err => {
 			console.error(err);
 		});
-};
+}
 
 const getSumarizationsByFilter = async (filter: {}) => {
 	try {
-		const sumarizations: any[] = await Sumarizations.find(filter)
+		const sumarizations: any[] = await Sumarization.find(filter)
 		if (!sumarizations) {
 			return [];
 		}
@@ -59,14 +58,14 @@ const getSumarizationsCallback = (req, res): void => {
 			console.error(err);
 			res.send(err);
 		});
-};
+}
 
 const putSumarizationsCallback = (req, res): void => {
-	Sumarizations.deleteMany({})
+	Sumarization.deleteMany({})
 	.then(response => {
-		Sumarizations.insertMany(req.body)
-		.then(res => {
-			res.send(res);
+		Sumarization.insertMany(req.body)
+		.then(insertResponse => {
+			res.send(insertResponse);
 		})
 		.catch(err => {
 			res.send(err);
@@ -77,11 +76,11 @@ const putSumarizationsCallback = (req, res): void => {
 		res.end();
 	});
     
-};
+}
 
 const getCityNames = async() => {
 	try {
-		const cities = await Cities.find()
+		const cities = <any>await City.find();
 		if(!cities) {
 			return [];
 		}
@@ -93,7 +92,7 @@ const getCityNames = async() => {
 
 const getTracksByCity = async(cityName: string) => {
 	try {
-		const tracks: any[] = await Tracks.find({city: cityName}).limit(5)
+		const tracks: any[] = await Track.find({city: cityName}).limit(5)
 		if(!tracks) {
 			return [];
 		}
@@ -141,6 +140,6 @@ const sumarizeTracksCallback = (req, res): void => {
 }
 
 const discardRepairedSegments = (segments) => {
-
 }
-module.exports = [getTracksCallback, getSumarizationsCallback, sumarizeTracksCallback, putSumarizationsCallback];
+
+export { getTracksCallback, getSumarizationsCallback, sumarizeTracksCallback, putSumarizationsCallback };

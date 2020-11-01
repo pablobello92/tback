@@ -1,9 +1,9 @@
 export {};
 
-const Cities = require('./../models/city');
+import City from './../models/city';
 
 const getCitiesCallback = (req, res): void => {
-    Cities.find()
+    City.find()
     .then(cities => {
         res.send(cities);
     })
@@ -12,4 +12,4 @@ const getCitiesCallback = (req, res): void => {
     });
 };
 
-module.exports = getCitiesCallback;
+export { getCitiesCallback };

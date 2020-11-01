@@ -1,13 +1,12 @@
 export {};
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import { Schema, model } from 'mongoose';
 
 const trackSchema = new Schema({
-    _id: mongoose.Schema.Types.ObjectId,
+    _id: Schema.Types.ObjectId,
     startTime: Number,
     user: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'User'
     },
     city: String,
@@ -59,6 +58,6 @@ const trackSchema = new Schema({
     }]
 });
 
-const Track = mongoose.model('Track', trackSchema);
+const Track = model('Track', trackSchema);
 
-module.exports = Track;
+export default Track;

@@ -1,10 +1,9 @@
 export {};
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import { Schema, model } from 'mongoose';
 
 const reparationSchema = new Schema({
-    _id: mongoose.Schema.Types.ObjectId,
+    _id: Schema.Types.ObjectId,
     startTime: Number,
     city: String,
     from: {
@@ -17,6 +16,6 @@ const reparationSchema = new Schema({
     },
 });
 
-const Reparation = mongoose.model('Reparation', reparationSchema, 'reparations');
+const Reparation = model('Reparation', reparationSchema, 'reparations');
 
-module.exports = Reparation;
+export default Reparation ;

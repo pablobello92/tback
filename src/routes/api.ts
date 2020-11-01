@@ -1,15 +1,14 @@
-
 export {};
-const express = require('express');
+import express from 'express';
 const router = express.Router();
 
-const [ indexCallback, notFoundCallback ] = require ('./../controllers/index');
-const loginCallBack = require('./../controllers/login');
-const [ getUserCallback, updateUserCallback ] = require('../controllers/users');
-const getCitiesCallback = require('../controllers/cities');
-const [ getTracksCallback, sumarizeTracksCallback, getSumarizationsCallback, putSumarizationsCallback ] = require('./../controllers/tracks');
-const [ getReparationsCallback, putReparationCallback ] = require('../controllers/reparations');
-const [ predictRoadsCallback, predictAnomaliesCallback ] = require('../controllers/predictions');
+import { indexCallback, notFoundCallback } from './../controllers/index';
+import { loginCallBack } from './../controllers/login';
+import { getUserCallback, updateUserCallback } from '../controllers/users';
+import { getCitiesCallback } from '../controllers/cities';
+import { getTracksCallback, sumarizeTracksCallback, getSumarizationsCallback, putSumarizationsCallback } from './../controllers/tracks';
+import { getReparationsCallback, putReparationCallback } from'../controllers/reparations';
+import { predictRoadsCallback, predictAnomaliesCallback } from '../controllers/predictions';
 
 router.get('/', indexCallback);
 router.post('/api/login', loginCallBack);

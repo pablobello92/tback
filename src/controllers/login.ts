@@ -8,4 +8,4 @@ const loginCallBack = (req, res) => {
     });
 };
 
-module.exports = loginCallBack;
+export { loginCallBack };

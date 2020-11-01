@@ -1,9 +1,8 @@
 export {};
-
-const Users = require('./../models/user');
+import User from './../models/user';
 
 const getUserCallback = (req, res): void => {
-    Users.findOne({ username: req.query.username})
+    User.findOne({ username: req.query.username})
     .then(user => {
         res.send(user);
     })
@@ -14,7 +13,7 @@ const getUserCallback = (req, res): void => {
 
 const updateUserCallback = (req, res): void => {
     const user = req.body;
-    Users.update(user)
+    User.update({}, user)
     .then(user => {
         res.send(["model updated!"]);
     })
@@ -23,5 +22,5 @@ const updateUserCallback = (req, res): void => {
     });
 }
 
-module.exports = [ getUserCallback, updateUserCallback ]
+export { getUserCallback, updateUserCallback };
 

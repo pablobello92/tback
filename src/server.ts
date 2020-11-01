@@ -1,8 +1,8 @@
 export {};
 import api from './routes/api'
-const express = require('express');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
+import express from 'express';
+import bodyParser from 'body-parser';
+import mongoose from 'mongoose';
 const app = express();
 
 const listenCallback = (): void => {

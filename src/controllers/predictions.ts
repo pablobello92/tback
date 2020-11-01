@@ -1,6 +1,5 @@
 export {};
-
-const tf = require('@tensorflow/tfjs-node');
+import * as tf from '@tensorflow/tfjs-node';
 
 const sample = [[
     [[-0.9959879 ],
@@ -606,14 +605,15 @@ const predictRoads = async() => {
     console.log('tensor: ', tensor);
     try {
         const result = loadedModel.predict(tensor);
-        return result.dataSync();
+        return result;
+        // return result.dataSync();
     } catch(error) {
         console.error(error);
         return error;
     }     
 }
 
-const predictRoadsCallback = (req, res) => {
+const predictRoadsCallback = (req, res): void => {
     predictRoads()
     .then(response => {
         res.send(response);
@@ -621,12 +621,10 @@ const predictRoadsCallback = (req, res) => {
         console.error(error);
         res.send(error);
     });
-};
+}
 
-const predictAnomaliesCallback = (req, res) => {
+const predictAnomaliesCallback = (req, res): void => {
     res.send(["anomalies predicted!"]); 
-};
+}
 
-
-
-module.exports = [ predictRoadsCallback, predictAnomaliesCallback ];
+export { predictRoadsCallback, predictAnomaliesCallback };
