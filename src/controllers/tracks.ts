@@ -2,19 +2,7 @@ export {};
 
 import Track from './../models/track';
 
-const getTracksByFilter = async (filter: {}, offset: number, pages: number) => {
-	try {
-		const tracks: any[] = await Track.find(filter).sort([['startTime', -1]]).skip(offset).limit(pages);
-		if (!tracks) {
-			return [];
-		}
-		return tracks;
-	} catch (error) {
-		throw new Error(error);
-	}
-}
-
-const getTracksCallback = (req, res): void => {
+export const getTracksCallback = (req, res): void => {
 	const filter = {
 		username: req.query.username,
 		city: req.query.city,
@@ -30,7 +18,17 @@ const getTracksCallback = (req, res): void => {
 		});
 }
 
-const discardRepairedSegments = (segments) => {
+const getTracksByFilter = async (filter: {}, offset: number, pages: number) => {
+	try {
+		const tracks: any[] = await Track.find(filter).sort([['startTime', -1]]).skip(offset).limit(pages);
+		if (!tracks) {
+			return [];
+		}
+		return tracks;
+	} catch (error) {
+		throw new Error(error);
+	}
 }
 
-export { getTracksCallback };
+const discardRepairedSegments = (segments) => {
+}

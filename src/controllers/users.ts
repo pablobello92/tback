@@ -1,7 +1,7 @@
 export {};
 import User from './../models/user';
 
-const getUserCallback = (req, res): void => {
+export const getUserCallback = (req, res): void => {
     User.findOne({ username: req.query.username})
     .then(user => {
         res.send(user);
@@ -11,7 +11,7 @@ const getUserCallback = (req, res): void => {
     });
 }
 
-const updateUserCallback = (req, res): void => {
+export const updateUserCallback = (req, res): void => {
     const user = req.body;
     User.update({}, user)
     .then(user => {
@@ -21,6 +21,4 @@ const updateUserCallback = (req, res): void => {
         res.send(["Error!"]);
     });
 }
-
-export { getUserCallback, updateUserCallback };
 

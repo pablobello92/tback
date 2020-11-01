@@ -4,6 +4,19 @@ import { sample } from './mocks';
 import { of } from 'rxjs/internal/observable/of';
 import { tensor4d, TensorLike } from '@tensorflow/tfjs-node';
 
+export const predictRoadsCallback = (req, res): void => {
+    predictRoads()
+    .then(response => {
+        res.send(response);
+    }, error => {
+        console.error(error);
+        res.send(error);
+    });
+}
+
+export const predictAnomaliesCallback = (req, res): void => {
+    res.send(["anomalies predicted!"]); 
+}
 
 const predictRoads = async() => {
     console.clear();
@@ -26,19 +39,3 @@ const predictRoads = async() => {
         throw new Error(err);
     });  
 }
-
-const predictRoadsCallback = (req, res): void => {
-    predictRoads()
-    .then(response => {
-        res.send(response);
-    }, error => {
-        console.error(error);
-        res.send(error);
-    });
-}
-
-const predictAnomaliesCallback = (req, res): void => {
-    res.send(["anomalies predicted!"]); 
-}
-
-export { predictRoadsCallback, predictAnomaliesCallback };

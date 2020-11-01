@@ -1,6 +1,6 @@
 export {};
 
-const addHeadersCallback = (req, res, next): void => {
+export const addHeadersCallback = (req, res, next): void => {
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
     // Request methods you wish to allow
@@ -14,18 +14,16 @@ const addHeadersCallback = (req, res, next): void => {
     next();
 };
 
-const listenCallback = (): void => {
+export const listenCallback = (): void => {
     console.log('--------------------------------');
     console.log(`Server running at port 8000`);
     console.log('--------------------------------');
 };
 
-const indexCallback = (req, res): void => {
+export const indexCallback = (req, res): void => {
     res.end();
 };
 
-const notFoundCallback = (req, res): void => {
+export const notFoundCallback = (req, res): void => {
     res.end('Route not found!');
 };
-
-export { addHeadersCallback, listenCallback, indexCallback, notFoundCallback };

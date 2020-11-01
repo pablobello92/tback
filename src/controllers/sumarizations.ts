@@ -28,7 +28,7 @@ import {
     sumarizingObjects
 } from './mocks';
 
-const sumarizeTracksCallback = (req, res): void => {
+export const sumarizeTracksCallback = (req, res): void => {
     of(sumarizingObjects)
     .pipe(
         map((mock: SumarizingObject[]) => mock.map((item: SumarizingObject) => sumarizeByCity(item)))
@@ -52,6 +52,25 @@ const sumarizeTracksCallback = (req, res): void => {
         console.error(err);
         throw err;
     });
+}
+
+//!OJO! usar este!
+//TODO: pass the data as parameter, it's not a get callback anymore
+const putSumarizationsCallback = (req, res): void => {
+    Sumarization.deleteMany({})
+        .then(response => {
+            Sumarization.insertMany(req.body)
+                .then(insertResponse => {
+                    res.send(insertResponse);
+                })
+                .catch(err => {
+                    res.send(err);
+                });
+        })
+        .catch(error => {
+            res.send(error);
+            res.end();
+        });
 }
 
 /*const getTracksMapped = (): Observable<SumarizingObject[]> => {
@@ -155,7 +174,7 @@ const getSumarizationsByFilter = async (filter: {}) => {
     }
 }
 
-const getSumarizationsCallback = (req, res): void => {
+export const getSumarizationsCallback = (req, res): void => {
     const filter = {
         city: req.query.city
     };
@@ -200,26 +219,3 @@ const getTracksByCity = async (cityName: string) => {
         throw new Error("error getting the cities");
     }
 }
-
-//TODO: pass the data as parameter, it's not a get callback anymore
-const putSumarizationsCallback = (req, res): void => {
-    Sumarization.deleteMany({})
-        .then(response => {
-            Sumarization.insertMany(req.body)
-                .then(insertResponse => {
-                    res.send(insertResponse);
-                })
-                .catch(err => {
-                    res.send(err);
-                });
-        })
-        .catch(error => {
-            res.send(error);
-            res.end();
-        });
-}
-
-export {
-    sumarizeTracksCallback,
-    getSumarizationsCallback
-};
