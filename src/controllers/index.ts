@@ -20,10 +20,10 @@ export const listenCallback = (): void => {
     console.log('--------------------------------');
 };
 
-export const indexCallback = (req, res): void => {
+export const indexCallback = (req: any, res: any): void => {
     res.end();
 };
 
-export const notFoundCallback = (req, res): void => {
+export const notFoundCallback = (req: any, res: any): void => {
     res.end('Route not found!');
 };

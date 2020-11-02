@@ -28,7 +28,7 @@ import {
     sumarizingObjects
 } from './mocks';
 
-export const sumarizeTracksCallback = (req, res): void => {
+export const sumarizeTracksCallback = (req: any, res: any): void => {
     of(sumarizingObjects)
     .pipe(
         map((mock: SumarizingObject[]) => mock.map((item: SumarizingObject) => sumarizeByCity(item)))
@@ -56,7 +56,7 @@ export const sumarizeTracksCallback = (req, res): void => {
 
 //!OJO! usar este!
 //TODO: pass the data as parameter, it's not a get callback anymore
-const putSumarizationsCallback = (req, res): void => {
+const putSumarizationsCallback = (req: any, res: any): void => {
     Sumarization.deleteMany({})
         .then(response => {
             Sumarization.insertMany(req.body)
@@ -174,7 +174,7 @@ const getSumarizationsByFilter = async (filter: {}) => {
     }
 }
 
-export const getSumarizationsCallback = (req, res): void => {
+export const getSumarizationsCallback = (req: any, res: any): void => {
     const filter = {
         city: req.query.city
     };

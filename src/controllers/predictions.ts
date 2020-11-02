@@ -4,7 +4,7 @@ import { sample } from './mocks';
 import { of } from 'rxjs/internal/observable/of';
 import { tensor4d, TensorLike } from '@tensorflow/tfjs-node';
 
-export const predictRoadsCallback = (req, res): void => {
+export const predictRoadsCallback = (req: any, res: any): void => {
     predictRoads()
     .then(response => {
         res.send(response);
@@ -14,7 +14,7 @@ export const predictRoadsCallback = (req, res): void => {
     });
 }
 
-export const predictAnomaliesCallback = (req, res): void => {
+export const predictAnomaliesCallback = (req: any, res: any): void => {
     res.send(["anomalies predicted!"]); 
 }
 

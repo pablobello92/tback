@@ -2,7 +2,7 @@ export {};
 
 import City from './../models/city';
 
-export const getCitiesCallback = (req, res): void => {
+export const getCitiesCallback = (req: any, res: any): void => {
     City.find({})
     .then(cities => {
         res.send(cities);

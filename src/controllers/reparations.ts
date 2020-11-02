@@ -1,7 +1,7 @@
 export {};
 import Reparation from './../models/reparation';
 
-export const getReparationsCallback = (req, res): void => {
+export const getReparationsCallback = (req: any, res: any): void => {
     const filter = {
         city: req.query.city
     };
@@ -14,7 +14,7 @@ export const getReparationsCallback = (req, res): void => {
     });
 };
 
-export const putReparationCallback = (req, res): void => {
+export const putReparationCallback = (req: any, res: any): void => {
     Reparation.insertMany([req.body])
     .then(response => {
         res.send(response)

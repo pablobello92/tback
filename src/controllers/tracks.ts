@@ -2,7 +2,7 @@ export {};
 
 import Track from './../models/track';
 
-export const getTracksCallback = (req, res): void => {
+export const getTracksCallback = (req: any, res: any): void => {
 	const filter = {
 		username: req.query.username,
 		city: req.query.city,
