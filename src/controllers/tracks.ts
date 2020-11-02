@@ -9,13 +9,13 @@ export const getTracksCallback = (req: any, res: any): void => {
 		startTime: {$gte: parseFloat(req.query.from), $lte: parseFloat(req.query.to)}
 	};
 	getTracksByFilter(filter, parseInt(req.query.offset), parseInt(req.query.pages))
-		.then(result => {
-			res.send(result);
-			res.end();
-		})
-		.catch(err => {
-			console.error(err);
-		});
+	.then(result => {
+		res.send(result);
+		res.end();
+	})
+	.catch(err => {
+		console.error(err);
+	});
 }
 
 const getTracksByFilter = async (filter: {}, offset: number, pages: number) => {
