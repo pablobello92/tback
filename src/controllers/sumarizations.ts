@@ -219,3 +219,7 @@ const getTracksByCity = async (cityName: string) => {
         throw new Error("error getting the cities");
     }
 }
+
+//! TODO!!!
+const discardRepairedSegments = (segments) => {
+}
