@@ -1,6 +1,12 @@
 export {};
 
 import Track from './../models/track';
+import { Observable, from } from 'rxjs';
+import { Document } from 'mongoose';
+
+
+export const fetchTracks = (filter: {} = {}, skip: number, limit: number): Observable<Document[]> =>
+	from(Track.find(filter).skip(skip).limit(limit).exec());
 
 export const getTracksCallback = (req: any, res: any): void => {
 	const filter = {
@@ -30,5 +36,6 @@ const getTracksByFilter = async (filter: {}, offset: number, pages: number) => {
 	}
 }
 
+//! TODO!!!
 const discardRepairedSegments = (segments) => {
 }
