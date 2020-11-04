@@ -1,8 +1,6 @@
 export {};
-import * as tf from '@tensorflow/tfjs-node';
 import { sample } from './mocks';
-import { of } from 'rxjs/internal/observable/of';
-import { tensor4d, TensorLike } from '@tensorflow/tfjs-node';
+import { Tensor4D, tensor4d, Tensor, loadLayersModel, Rank } from '@tensorflow/tfjs-node';
 
 export const predictRoadsCallback = (req: any, res: any): void => {
     predictRoads()
@@ -18,24 +16,37 @@ export const predictAnomaliesCallback = (req: any, res: any): void => {
     res.send(["anomalies predicted!"]); 
 }
 
+/**
+ * 
+ * 85 muestras
+ * ==> tensor: [ [0...5][0]... [0...5][84] ] = [[x, y, z, xdiff, ydiff, zdiff][0]...]
+ */
 const predictRoads = async() => {
     console.clear();
-    return of(sample)
-    .subscribe((res: any) => {
-        const tensor = tf.tensor4d(res);
-        console.log('tensor: ', tensor);
-        try {
-            return tensor;
-            // const loadedModel = await tf.loadLayersModel('file://assets/tensorFlowCore/roads/model.json');
-            // const result = loadedModel.predict(tensor);
-            // return result;
-            // return result.dataSync();
-        } catch(err) {
-            console.error(err);
-            throw new Error(err);
-        }   
-    }, err => {
-        console.error();
+    try {
+        // return tensor;
+        const tensor: Tensor4D = tensor4d(sample);
+        const loadedModel = await loadLayersModel('file://src/assets/tensorFlowCore/roads/model.json');
+        const result: Tensor<Rank> = loadedModel.predict(tensor) as Tensor;
+        return result.dataSync();
+    } catch(err) {
+        console.error(err);
         throw new Error(err);
-    });  
+    }
 }
+
+
+/**
+ *  Predict() retorna un numero que identifica al tipo de muestra segun orden alfabetico:
+ *   Asphalt 0
+ *   Cobbles 1
+ *   Concrete 2
+ *   Earth 3 
+ * 
+ *  Call 0
+* Door 1
+* Message 2
+* Pothole 3
+* Speed Bump 4
+* Street Gutter 5
+ */
