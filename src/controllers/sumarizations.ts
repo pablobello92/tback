@@ -11,98 +11,66 @@ import Track from '../models/track';
 import {
     IRange,
     ITrack,
-    SumarizingObject,
+    ISumarizingObject,
     SumarizingSegment
 } from '../interfaces/Sumarizations';
-
-import {
-    Observable
-} from 'rxjs';
 import {
     of
 } from 'rxjs/internal/observable/of';
 import {
-    map
+    map, tap
 } from 'rxjs/operators';
 import {
     sumarizingObjects
 } from './mocks';
+import {
+    getTracksMapByCity
+} from './tracks';
 
-export const sumarizeTracksCallback = (req: any, res: any): void => {
-    of(sumarizingObjects)
-    .pipe(
-        map((mock: SumarizingObject[]) => mock.map((item: SumarizingObject) => sumarizeByCity(item)))
-    )
-    .subscribe(result => {
-        console.log(result);
-        Sumarization.deleteMany({})
-        .then(deletion => {
-            Sumarization.insertMany(result)
-            .then(result => {   
-                res.send(result);   
-            })
-            .catch(error => {
-                throw error;
-            });
-        })
-        .catch(error => {
-            throw error;
-        });    
-    }, err => {
-        console.error(err);
-        throw err;
-    });
+const errorCallback =  (err: any) => {
+    console.error(err);
+    throw err;
 }
 
-//!OJO! usar este!
+//TODO: remove the mock, use the new getMappings function
+
+//TODO: put the callBack inside a switchMap... and then send the response in the subscribe()
+export const sumarizeTracksCallback = (req: any, res: any): void => {
+    /* const requiredFields: string = 'city startTime ranges';
+    getTracksMapByCity(requiredFields) */
+    of(sumarizingObjects)
+    .pipe(
+        tap((res: any) => {
+            console.log(res);
+        }),
+        map((mock: ISumarizingObject[]) => mock.map((item: ISumarizingObject) => sumarizeByCity(item)))
+    )
+    .subscribe((sumarizedTracks: any) => {
+        putSumarizationsCallback(req, res, sumarizedTracks);
+    }, errorCallback);
+}
+
 //TODO: pass the data as parameter, it's not a get callback anymore
-const putSumarizationsCallback = (req: any, res: any): void => {
+const putSumarizationsCallback = (req: any, res: any, sumarizedTracks: any): void => {
     Sumarization.deleteMany({})
-        .then(response => {
-            Sumarization.insertMany(req.body)
-                .then(insertResponse => {
+        .then((deleteResult: any) => {
+            Sumarization.insertMany(sumarizedTracks)
+                .then((insertResponse: any) => {
                     res.send(insertResponse);
                 })
-                .catch(err => {
+                .catch((err: any) => {
                     res.send(err);
+                    res.end();
                 });
         })
-        .catch(error => {
+        .catch((error: any) => {
             res.send(error);
             res.end();
         });
 }
 
-/*const getTracksMapped = (): Observable<SumarizingObject[]> => {
-    return getCityNames()
-    .then((cityNames: string[]) => {
-        let result = [];
-        cityNames.forEach(cityName => {
-            result.push(getTracksByCity(cityName))
-        });
-        return Promise.all(result)
-        .then(tracks => {
-            const objects = tracks.map((tracks, index) => {
-                return {
-                    city: cityNames[index],
-                    tracks
-                };
-            });
-            return objects;
-        })
-        .then(objects => {
-            return objects;
-        })
-        .catch(error => {
-            throw error;
-        });
-    })
-    .catch(error => {
-        throw error;
-    });
-}*/
 
-const sumarizeByCity = (item: SumarizingObject): any => {
+const sumarizeByCity = (item: ISumarizingObject): any => {
     const ranges: SumarizingSegment[] = [];
     const tracks = item.tracks;
     tracks.forEach((track: ITrack) => {
@@ -186,38 +154,6 @@ export const getSumarizationsCallback = (req: any, res: any): void => {
             console.error(err);
             res.send(err);
         });
-}
-
-const getCityNames = async () => {
-    try {
-        const cities = < any > await City.find();
-        if (!cities) {
-            return [];
-        }
-        return cities.map(city => city.name);
-    } catch (error) {
-        throw new Error("error getting the cities");
-    }
-}
-
-const getTracksByCity = async (cityName: string) => {
-    try {
-        const tracks: any[] = await Track.find({
-            city: cityName
-        }).limit(5)
-        if (!tracks) {
-            return [];
-        }
-        const result = tracks.map(track => {
-            return {
-                startTime: track.startTime,
-                ranges: track.ranges
-            };
-        });
-        return result;
-    } catch (error) {
-        throw new Error("error getting the cities");
-    }
 }
 
 //! TODO!!!

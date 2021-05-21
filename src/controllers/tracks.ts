@@ -7,6 +7,7 @@ import { fetchCities } from './cities';
 import { map, mergeAll, mergeMap, switchMap, tap } from 'rxjs/operators';
 
 
+//TODO: TYPE THE RETURN OF THE FUNCTIONS
 export const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Observable<Document[]> =>
 	from(Track.find(filter).select(fields).skip(skip).limit(limit).exec());
 
@@ -23,35 +24,19 @@ const getTracksMappingByCity = (city: string, fields: string, skip: number, limi
 	);
 }
 
-//TODO: Remove LIMIT, add accelerometers!
-//TODO: fix deprecation warning on forkJoin
-export const getTracksMapByCity = (): Observable<any> => {
+//TODO: Remove LIMIT
+export const getTracksMapByCity = (fields: string): Observable<any> => {
 	return fetchCities()
 	.pipe(
 		map((cities: Document[]) => cities.map((city: any) => city.name)),
-		mergeMap((cities: string[]) => {
-			const observables = cities.map((city: any) =>  getTracksMappingByCity(city, 'id city startTime ranges', 0, 10));
+		mergeMap((cityNames: string[]) => {
+			const observables = cityNames.map((cityName: any) =>  getTracksMappingByCity(cityName, fields, 0, 4));
 			return forkJoin(...observables);
 		})
 	);
 }
 
 export const getTracksCallback = (req: any, res: any): void => {
-	getTracksMapByCity()
-	.subscribe({
-        next(result: any[]) {
-			console.clear();			
-			result.forEach((item: any) => {
-				console.log(item.city);
-				console.log(item.startTime);
-				console.log(item.tracks);
-			});
-        },
-        error(err: any) { 
-            console.error(err);
-        }
-    });
-
 	const filter = {
 		username: req.query.username,
 		city: req.query.city,

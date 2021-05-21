@@ -57,10 +57,10 @@ export interface ITrack {
     startTime: number;
     city: String;
     ranges: IRange[];
-    accelerometers: Accelerometer[];
+    accelerometers?: Accelerometer[];
 }
 
-export interface SumarizingObject {
+export interface ISumarizingObject {
     city: string;
     date?: number;
     tracks: ITrack[];
