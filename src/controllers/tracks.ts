@@ -45,14 +45,15 @@ export const getTracksCallback = (req: any, res: any): void => {
 	const fields: string = 'id ranges city startTime';
 	const offset = parseInt(req.query.offset);
 	const limit = parseInt(req.query.pages);
+	console.log(req.query);
+	console.log(offset, limit);
 	fetchTracks(filter, fields, offset, limit)
-	.subscribe({
-        next(tracks: Document[]) {
+	.subscribe(
+		(tracks: Document[]) => {
+			console.log(tracks);
             res.send(tracks);
-        },
-        error(err: any) { 
+        }, (err: any) => { 
             console.error(err);
             throw (err);
-        }
     });
 }
