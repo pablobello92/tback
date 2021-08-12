@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/PabloGBello/proyectoTesis_backend#readme",
   "dependencies": {
-    "@tensorflow/tfjs-node": "^2.6.0",
+    "@tensorflow/tfjs-node": "^2.8.6",
     "express": "^4.16.4",
     "mongoose": "^5.7.5",
     "rxjs": "^6.6.3"
