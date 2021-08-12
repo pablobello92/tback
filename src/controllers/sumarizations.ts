@@ -18,7 +18,8 @@ import {
     of
 } from 'rxjs/internal/observable/of';
 import {
-    map, tap
+    map,
+    tap
 } from 'rxjs/operators';
 import {
     sumarizingObjects
@@ -27,7 +28,7 @@ import {
     getTracksMapByCity
 } from './tracks';
 
-const errorCallback =  (err: any) => {
+const errorCallback = (err: any) => {
     console.error(err);
     throw err;
 }
@@ -38,16 +39,16 @@ const errorCallback =  (err: any) => {
 export const sumarizeTracksCallback = (req: any, res: any): void => {
     /* const requiredFields: string = 'city startTime ranges';
     getTracksMapByCity(requiredFields) */
-    of(sumarizingObjects)
+    of (sumarizingObjects)
     .pipe(
-        tap((res: any) => {
-            console.log(res);
-        }),
-        map((mock: ISumarizingObject[]) => mock.map((item: ISumarizingObject) => sumarizeByCity(item)))
-    )
-    .subscribe((sumarizedTracks: any) => {
-        putSumarizationsCallback(req, res, sumarizedTracks);
-    }, errorCallback);
+            tap((res: any) => {
+                console.log(res);
+            }),
+            map((mock: ISumarizingObject[]) => mock.map((item: ISumarizingObject) => sumarizeByCity(item)))
+        )
+        .subscribe((sumarizedTracks: any) => {
+            putSumarizationsCallback(req, res, sumarizedTracks);
+        }, errorCallback);
 }
 
 //TODO: pass the data as parameter, it's not a get callback anymore
@@ -157,5 +158,4 @@ export const getSumarizationsCallback = (req: any, res: any): void => {
 }
 
 //! TODO!!!
-const discardRepairedSegments = (segments) => {
-}
+const discardRepairedSegments = (segments) => {}

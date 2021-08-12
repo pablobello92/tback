@@ -44,7 +44,7 @@ interface Accelerometer {
 }
 
 export interface SumarizingSegment extends Segment {
-    accuracy?: number;
+    accuracy ? : number;
 }
 
 export interface IRange extends Segment {
@@ -57,15 +57,13 @@ export interface ITrack {
     startTime: number;
     city: String;
     ranges: IRange[];
-    accelerometers?: Accelerometer[];
+    accelerometers ? : Accelerometer[];
 }
-
 export interface ISumarizingObject {
     city: string;
-    date?: number;
+    date ? : number;
     tracks: ITrack[];
 }
-
 
 export interface SumarizedObject {
     city: string;
