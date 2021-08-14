@@ -1,19 +1,7 @@
 export {};
-import {
-    getCenter,
-    getDistance
-} from 'geolib';
 
 import Sumarization from '../models/sumarization';
 
-import {
-    IRange,
-    ITrack,
-    ISumarizingObject,
-    ISumarizationSegment,
-    ISumarizedObject,
-    SumarizationSegment
-} from '../interfaces/Sumarizations';
 import {
     of
 } from 'rxjs/internal/observable/of';
@@ -27,6 +15,16 @@ import {
 import {
     getTracksMapByCity
 } from './tracks';
+import {
+    ISumarizingObject,
+    ISumarizationSegment,
+    ISumarizedObject,
+    SumarizationSegment
+} from '../interfaces/Segment';
+import {
+    IRange,
+    ITrack
+} from '../interfaces/Track';
 
 // TODO: refactor this... this should go in a separate configuration or constants file
 // TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
@@ -99,8 +97,8 @@ const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
     tracks.forEach((track: ITrack) => {
         addSumarizedSegmentsByTrack(sumarizedRanges, track);
     });
-    
-    return <ISumarizedObject>{
+
+    return <ISumarizedObject> {
         city: item.city,
         date,
         ranges: sumarizedRanges
@@ -139,7 +137,7 @@ const addSegment = (segment: ISumarizationSegment, array: ISumarizationSegment[]
 }
 
 const findMatchingSegment = (mySegment: ISumarizationSegment, array: ISumarizationSegment[]): ISumarizationSegment | undefined => {
-    const matchingSegment = array.find((segment: ISumarizationSegment) => 
+    const matchingSegment = array.find((segment: ISumarizationSegment) =>
         new SumarizationSegment(segment).matchesTo(mySegment)
     );
     return matchingSegment;

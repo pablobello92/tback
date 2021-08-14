@@ -1,53 +1,26 @@
-import { 
+import {
     getCenter,
     getDistance
 } from "geolib";
+import {
+    Coordinate
+} from "./Coordinate";
+import { ITrack } from "./Track";
 
-interface StabilityEvent {
-    id: number;
-    startTime: number;
-    endTime: number;
-    xavg: number;
-    yavg: number;
-    zavg: number;
-    score: number;
-    duration: number;
-}
-
-interface Axis {
-    raw: Number;
-    delta: Number;
-    diff: Number;
-}
-
-interface Accelerometer {
-    id: Number;
-    eventId: Number;
-    currentTime: Number;
-    x: Axis;
-    y: Axis;
-    z: Axis;
-    axis: String;
-}
-
-export interface Coordinate {
-    lat: number;
-    lng: number;
-}
-
-interface IBaseSegment {
+export interface IBaseSegment {
     start: Coordinate;
     end: Coordinate;
 }
 
-interface ISegment extends IBaseSegment {
+export interface ISegment extends IBaseSegment {
     date: number;
     score: number;
     distance: number;
     matchesTo(center: ISumarizationSegment): boolean;
 }
+
 export interface ISumarizationSegment extends ISegment {
-    accuracy? : number;
+    accuracy ? : number;
 }
 
 export class SumarizationSegment implements ISumarizationSegment {
@@ -65,7 +38,7 @@ export class SumarizationSegment implements ISumarizationSegment {
         this.distance = segment.distance;
     }
 
-    matchesTo(segment: ISumarizationSegment): boolean  {
+    matchesTo(segment: ISumarizationSegment): boolean {
         const center: any = getCenter([segment.start, segment.end]);
         const length = getDistance(this.start, this.end);
         const distanceToStart = getDistance(this.start, center);
@@ -75,19 +48,6 @@ export class SumarizationSegment implements ISumarizationSegment {
             distanceToEnd < length
         );
     }
-}
-
-export interface IRange extends ISegment {
-    speed: number;
-    stabilityEvents: StabilityEvent[];
-}
-
-export interface ITrack {
-    id: number;
-    startTime: number;
-    city: String;
-    ranges: IRange[];
-    accelerometers ? : Accelerometer[];
 }
 
 export interface ISumarizingObject {
