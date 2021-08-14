@@ -17,8 +17,11 @@ import {
 } from 'rxjs/internal/operators/tap';
 
 export const predictRoadsCallback = (req: any, res: any): void => {
-    console.clear();
-    console.log('Inside predictor');
+    console.log('\n'.repeat(20));
+    console.log('----------------');
+    console.log('PREDECIR SUELOS');
+    console.log('----------------');
+    console.log('');
     const fields = 'id city startTime ranges accelerometers';
     getTracksMapByCity(fields)
         .pipe(
@@ -27,13 +30,16 @@ export const predictRoadsCallback = (req: any, res: any): void => {
                     console.log('-------------------');
                     console.log(item.city);
                     console.log(item.startTime);
-                    console.log(item.tracks.length);
+                    console.log(item.tracks);
                     console.log('-------------------');
                 });
             })
         )
         .subscribe((result: any) => {
             res.send(['Prediction']);
+            res.end();
+        }, (err: any) =>{
+            res.send(['error']);
             res.end();
         });
 
