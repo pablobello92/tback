@@ -4,15 +4,15 @@ import {
     getDistance
 } from 'geolib';
 
-import City from '../models/city';
 import Sumarization from '../models/sumarization';
-import Track from '../models/track';
 
 import {
     IRange,
     ITrack,
     ISumarizingObject,
-    SumarizingSegment
+    ISumarizationSegment,
+    ISumarizedObject,
+    SumarizationSegment
 } from '../interfaces/Sumarizations';
 import {
     of
@@ -28,27 +28,15 @@ import {
     getTracksMapByCity
 } from './tracks';
 
+// TODO: refactor this... this should go in a separate configuration or constants file
+// TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
+// TODO: Date() y el date del segmento
+const NEW_DATA_WEIGHT = 0.6;
+const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
+
 const errorCallback = (err: any) => {
     console.error(err);
     throw err;
-}
-
-//TODO: remove the mock, use the new getMappings function
-
-//TODO: put the callBack inside a switchMap... and then send the response in the subscribe()
-export const sumarizeTracksCallback = (req: any, res: any): void => {
-    /* const requiredFields: string = 'city startTime ranges';
-    getTracksMapByCity(requiredFields) */
-    of (sumarizingObjects)
-    .pipe(
-            tap((res: any) => {
-                console.log(res);
-            }),
-            map((mock: ISumarizingObject[]) => mock.map((item: ISumarizingObject) => sumarizeByCity(item)))
-        )
-        .subscribe((sumarizedTracks: any) => {
-            putSumarizationsCallback(req, res, sumarizedTracks);
-        }, errorCallback);
 }
 
 //TODO: pass the data as parameter, it's not a get callback anymore
@@ -70,66 +58,101 @@ const putSumarizationsCallback = (req: any, res: any, sumarizedTracks: any): voi
         });
 }
 
+//TODO: DESMOCKEAR, usar la funcion getMappings()
+// TODO: putSumarizationsCallback() deberia ir en un switchMap() dentro del pipe()
+// TODO: Luego hago el res.send() en el subscribe()
 
-const sumarizeByCity = (item: ISumarizingObject): any => {
-    const ranges: SumarizingSegment[] = [];
+//? 1) Obtengo los tracks MOCKEADOS
+export const sumarizeTracksCallback = (req: any, res: any): void => {
+    /* const requiredFields: string = 'city startTime ranges';
+    getTracksMapByCity(requiredFields) */
+    console.log('\n'.repeat(20));
+    console.log('----------------');
+    console.log('SUMARIZAR TRACKS');
+    console.log('----------------');
+    console.log('');
+    of (sumarizingObjects)
+    .pipe(
+            tap((res: ISumarizingObject[]) => {
+                console.log(res);
+            }),
+            //? 2) Para cada ciudad, ejecuto la sumarizacion
+            map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData))
+        )
+        .subscribe((sumarizedTracks: any) => {
+            putSumarizationsCallback(req, res, sumarizedTracks);
+        }, errorCallback);
+}
+
+//? 2) Para cada ciudad, ejecuto la sumarizacion
+const sumarizeTracksByCity = (items: ISumarizingObject[]): any[] => {
+    return items.map((item: ISumarizingObject) => sumarizeTracks(item));
+}
+
+const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
+    const date = new Date().getMilliseconds();
+
+    const sumarizedRanges: ISumarizationSegment[] = [];
+
     const tracks = item.tracks;
+
     tracks.forEach((track: ITrack) => {
-        addSumarizedSegmentsByTrack(ranges, track);
+        addSumarizedSegmentsByTrack(sumarizedRanges, track);
     });
-    return {
+    
+    return <ISumarizedObject>{
         city: item.city,
-        date: Date.parse(new Date().toDateString()),
-        ranges
+        date,
+        ranges: sumarizedRanges
     };
 }
 
-const addSumarizedSegmentsByTrack = (temp: SumarizingSegment[], track: ITrack): any => {
-    const startTime = track.startTime;
-    const segments: SumarizingSegment[] = track.ranges.map((item: IRange) => mapRangeToSumarizingRange(item));
-    segments.forEach((segment: SumarizingSegment) => {
-        addRangeToResult(segment, temp);
+const addSumarizedSegmentsByTrack = (array: ISumarizationSegment[], track: ITrack): void => {
+    let segments: ISumarizationSegment[] = [];
+    segments = track.ranges.map((item: IRange) => mapSegmentToSumarizingSegment(item));
+    segments.forEach((segment: ISumarizationSegment) => {
+        addSegment(segment, array);
     });
 }
 
-// add Coordinate = { lat/lng } type to elements
-const addRangeToResult = (rangeToMerge: SumarizingSegment, subTemp: SumarizingSegment[]): any => {
-    const midpoint = getCenter([rangeToMerge.start, rangeToMerge.end]);
-    const toMerge = subTemp.find((range: SumarizingSegment) => shouldMerge(midpoint, range));
-    if (!toMerge) {
-        rangeToMerge.accuracy = 1;
-        subTemp.push(rangeToMerge);
-    } else {
-        mergeRanges(toMerge, rangeToMerge);
-    }
-}
-
-const shouldMerge = (point: any, range: any): boolean => {
-    const distance = getDistance(range.start, range.end);
-    const distanceToStart = getDistance(range.start, point);
-    const distanceToEnd = getDistance(range.end, point);
-    return distanceToStart < distance && distanceToEnd < distance;
-}
-
-const mergeRanges = (oldRange: SumarizingSegment, newRange: SumarizingSegment): void => {
-    const NEW_DATA_WEIGHT = 0.6;
-    const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
-    oldRange.score = oldRange.score * OLD_DATA_WEIGHT + newRange.score * NEW_DATA_WEIGHT;
-    oldRange.date = newRange.date;
-    oldRange.accuracy++;
-}
-
-const mapRangeToSumarizingRange = (range: IRange): SumarizingSegment => {
+//? Convierto un Range en un SumarizationSegment, descartando lo que no me interesa
+const mapSegmentToSumarizingSegment = (range: IRange): ISumarizationSegment => {
     const {
         speed,
         stabilityEvents,
         ...relevantFields
     } = range;
-    return <SumarizingSegment > {
+    return <ISumarizationSegment> {
         ...relevantFields,
         accuracy: 0
     };
 }
+
+const addSegment = (segment: ISumarizationSegment, array: ISumarizationSegment[]): void => {
+    const matchingSegment = findMatchingSegment(segment, array);
+    if (matchingSegment) {
+        updateMatchingSegment(segment, matchingSegment);
+    } else {
+        segment.accuracy = 1;
+        array.push(segment);
+    }
+}
+
+const findMatchingSegment = (mySegment: ISumarizationSegment, array: ISumarizationSegment[]): ISumarizationSegment | undefined => {
+    const matchingSegment = array.find((segment: ISumarizationSegment) => 
+        new SumarizationSegment(segment).matchesTo(mySegment)
+    );
+    return matchingSegment;
+}
+
+const updateMatchingSegment = (segment: ISumarizationSegment, matchingSegment: ISumarizationSegment): void => {
+    matchingSegment.score = matchingSegment.score * OLD_DATA_WEIGHT + segment.score * NEW_DATA_WEIGHT;
+    matchingSegment.date = segment.date;
+    matchingSegment.accuracy++;
+}
+
+//! TODO!!!
+const discardRepairedSegments = (segments) => {}
 
 const getSumarizationsByFilter = async (filter: {}) => {
     try {
@@ -156,6 +179,3 @@ export const getSumarizationsCallback = (req: any, res: any): void => {
             res.send(err);
         });
 }
-
-//! TODO!!!
-const discardRepairedSegments = (segments) => {}

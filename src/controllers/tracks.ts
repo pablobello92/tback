@@ -40,13 +40,16 @@ const getTracksMappingByCity = (city: string, fields: string, skip: number, limi
 		);
 }
 
-//TODO: Remove LIMIT
+// !CURRENTLY THE SKIP IS 0
+// TODO: Remove LIMIT = 3
+// !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
+// !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
 export const getTracksMapByCity = (fields: string): Observable < any > => {
 	return fetchCities()
 		.pipe(
 			map((cities: Document[]) => cities.map((city: any) => city.name)),
 			mergeMap((cityNames: string[]) => {
-				const observables = cityNames.map((cityName: any) => getTracksMappingByCity(cityName, fields, 0, 4));
+				const observables = cityNames.map((cityName: any) => getTracksMappingByCity(cityName, fields, 0, 3));
 				return forkJoin(...observables);
 			})
 		);

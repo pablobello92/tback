@@ -1,20 +1,7 @@
-interface Coordinate {
-    lat: number;
-    lng: number;
-}
-
-interface SimpleRange {
-    from: Coordinate;
-    to: Coordinate;
-}
-
-interface Segment {
-    date: number;
-    start: Coordinate;
-    end: Coordinate;
-    score: number;
-    distance: number;
-}
+import { 
+    getCenter,
+    getDistance
+} from "geolib";
 
 interface StabilityEvent {
     id: number;
@@ -43,11 +30,54 @@ interface Accelerometer {
     axis: String;
 }
 
-export interface SumarizingSegment extends Segment {
-    accuracy ? : number;
+export interface Coordinate {
+    lat: number;
+    lng: number;
 }
 
-export interface IRange extends Segment {
+interface IBaseSegment {
+    start: Coordinate;
+    end: Coordinate;
+}
+
+interface ISegment extends IBaseSegment {
+    date: number;
+    score: number;
+    distance: number;
+    matchesTo(center: ISumarizationSegment): boolean;
+}
+export interface ISumarizationSegment extends ISegment {
+    accuracy? : number;
+}
+
+export class SumarizationSegment implements ISumarizationSegment {
+    start: Coordinate;
+    end: Coordinate;
+    date: number;
+    score: number;
+    distance: number;
+
+    constructor(segment: ISumarizationSegment) {
+        this.start = segment.start;
+        this.end = segment.end;
+        this.date = segment.date;
+        this.score = segment.score;
+        this.distance = segment.distance;
+    }
+
+    matchesTo(segment: ISumarizationSegment): boolean  {
+        const center: any = getCenter([segment.start, segment.end]);
+        const length = getDistance(this.start, this.end);
+        const distanceToStart = getDistance(this.start, center);
+        const distanceToEnd = getDistance(this.end, center);
+        return (
+            distanceToStart < length &&
+            distanceToEnd < length
+        );
+    }
+}
+
+export interface IRange extends ISegment {
     speed: number;
     stabilityEvents: StabilityEvent[];
 }
@@ -59,14 +89,15 @@ export interface ITrack {
     ranges: IRange[];
     accelerometers ? : Accelerometer[];
 }
+
 export interface ISumarizingObject {
     city: string;
     date ? : number;
     tracks: ITrack[];
 }
 
-export interface SumarizedObject {
+export interface ISumarizedObject {
     city: string;
     date: number;
-    ranges: SumarizingSegment[];
+    ranges: SumarizationSegment[];
 }
