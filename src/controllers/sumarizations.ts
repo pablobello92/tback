@@ -19,7 +19,8 @@ import {
     ISumarizingObject,
     ISumarizationSegment,
     ISumarizedObject,
-    SumarizationSegment
+    mapRangeToSumarizingSegment,
+    matches
 } from '../interfaces/Segment';
 import {
     IRange,
@@ -71,76 +72,62 @@ export const sumarizeTracksCallback = (req: any, res: any): void => {
     console.log('');
     of (sumarizingObjects)
     .pipe(
-            tap((res: ISumarizingObject[]) => {
-                console.log(res);
-            }),
             //? 2) Para cada ciudad, ejecuto la sumarizacion
             map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData))
+            //? Aca debe ir la funcion para descartar...
+            //? PAra c/ciudad traigo las reparaciones y repito el proceso...
         )
-        .subscribe((sumarizedTracks: any) => {
+        .subscribe((sumarizedTracks: ISumarizedObject[]) => {
             putSumarizationsCallback(req, res, sumarizedTracks);
         }, errorCallback);
 }
 
 //? 2) Para cada ciudad, ejecuto la sumarizacion
-const sumarizeTracksByCity = (items: ISumarizingObject[]): any[] => {
+const sumarizeTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] => {
     return items.map((item: ISumarizingObject) => sumarizeTracks(item));
 }
 
+//? 3) Ejecuto la sumarizacion de Tracks de una Ciudad
 const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
+    // TODO: Probably all City groupings should have the same date!!
     const date = new Date().getMilliseconds();
 
-    const sumarizedRanges: ISumarizationSegment[] = [];
+    const sumarizedSegments: ISumarizationSegment[] = [];
 
     const tracks = item.tracks;
 
     tracks.forEach((track: ITrack) => {
-        addSumarizedSegmentsByTrack(sumarizedRanges, track);
+        sumarizeNextTrack(sumarizedSegments, track);
     });
 
-    return <ISumarizedObject> {
+    return <ISumarizedObject > {
         city: item.city,
         date,
-        ranges: sumarizedRanges
+        sumarizedSegments
     };
 }
 
-const addSumarizedSegmentsByTrack = (array: ISumarizationSegment[], track: ITrack): void => {
+const sumarizeNextTrack = (array: ISumarizationSegment[], track: ITrack): void => {
+    let ranges: IRange[] = track.ranges;
     let segments: ISumarizationSegment[] = [];
-    segments = track.ranges.map((item: IRange) => mapSegmentToSumarizingSegment(item));
+    segments = ranges.map((item: IRange) => mapRangeToSumarizingSegment(item));
     segments.forEach((segment: ISumarizationSegment) => {
         addSegment(segment, array);
     });
 }
 
-//? Convierto un Range en un SumarizationSegment, descartando lo que no me interesa
-const mapSegmentToSumarizingSegment = (range: IRange): ISumarizationSegment => {
-    const {
-        speed,
-        stabilityEvents,
-        ...relevantFields
-    } = range;
-    return <ISumarizationSegment> {
-        ...relevantFields,
-        accuracy: 0
-    };
-}
-
-const addSegment = (segment: ISumarizationSegment, array: ISumarizationSegment[]): void => {
-    const matchingSegment = findMatchingSegment(segment, array);
+const addSegment = (sNew: ISumarizationSegment, array: ISumarizationSegment[]): void => {
+    const matchingSegment = findMatchingSegment(sNew, array);
     if (matchingSegment) {
-        updateMatchingSegment(segment, matchingSegment);
+        updateMatchingSegment(sNew, matchingSegment);
     } else {
-        segment.accuracy = 1;
-        array.push(segment);
+        sNew.accuracy = 1;
+        array.push(sNew);
     }
 }
 
 const findMatchingSegment = (mySegment: ISumarizationSegment, array: ISumarizationSegment[]): ISumarizationSegment | undefined => {
-    const matchingSegment = array.find((segment: ISumarizationSegment) =>
-        new SumarizationSegment(segment).matchesTo(mySegment)
-    );
-    return matchingSegment;
+    return array.find((segment: ISumarizationSegment) => matches(mySegment, segment));
 }
 
 const updateMatchingSegment = (segment: ISumarizationSegment, matchingSegment: ISumarizationSegment): void => {
@@ -150,7 +137,9 @@ const updateMatchingSegment = (segment: ISumarizationSegment, matchingSegment: I
 }
 
 //! TODO!!!
-const discardRepairedSegments = (segments) => {}
+const discardRepairedSegments = (segments): void => {
+    return;
+}
 
 const getSumarizationsByFilter = async (filter: {}) => {
     try {

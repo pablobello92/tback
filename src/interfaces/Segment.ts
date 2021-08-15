@@ -5,7 +5,10 @@ import {
 import {
     Coordinate
 } from "./Coordinate";
-import { ITrack } from "./Track";
+import {
+    IRange,
+    ITrack
+} from "./Track";
 
 export interface IBaseSegment {
     start: Coordinate;
@@ -16,38 +19,10 @@ export interface ISegment extends IBaseSegment {
     date: number;
     score: number;
     distance: number;
-    matchesTo(center: ISumarizationSegment): boolean;
 }
 
 export interface ISumarizationSegment extends ISegment {
     accuracy ? : number;
-}
-
-export class SumarizationSegment implements ISumarizationSegment {
-    start: Coordinate;
-    end: Coordinate;
-    date: number;
-    score: number;
-    distance: number;
-
-    constructor(segment: ISumarizationSegment) {
-        this.start = segment.start;
-        this.end = segment.end;
-        this.date = segment.date;
-        this.score = segment.score;
-        this.distance = segment.distance;
-    }
-
-    matchesTo(segment: ISumarizationSegment): boolean {
-        const center: any = getCenter([segment.start, segment.end]);
-        const length = getDistance(this.start, this.end);
-        const distanceToStart = getDistance(this.start, center);
-        const distanceToEnd = getDistance(this.end, center);
-        return (
-            distanceToStart < length &&
-            distanceToEnd < length
-        );
-    }
 }
 
 export interface ISumarizingObject {
@@ -59,5 +34,29 @@ export interface ISumarizingObject {
 export interface ISumarizedObject {
     city: string;
     date: number;
-    ranges: SumarizationSegment[];
+    sumarizedSegments: ISumarizationSegment[];
+}
+
+//? Convierto un Range en un SumarizationSegment, descartando lo que no me interesa
+export const mapRangeToSumarizingSegment = (range: IRange): ISumarizationSegment => {
+    const {
+        speed,
+        stabilityEvents,
+        ...relevantFields
+    } = range;
+    return <ISumarizationSegment > {
+        ...relevantFields,
+        accuracy: 0
+    };
+}
+
+export const matches = (a: ISumarizationSegment, b: ISumarizationSegment): boolean => {
+    const center: any = getCenter([a.start, a.end]);
+    const length: number = getDistance(b.start, b.end);
+    const distanceToStart: number = getDistance(b.start, center);
+    const distanceToEnd: number = getDistance(b.end, center);
+    return (
+        distanceToStart < length &&
+        distanceToEnd < length
+    );
 }
