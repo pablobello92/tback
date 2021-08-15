@@ -1,6 +1,9 @@
 export {};
 
-import { Schema, model } from 'mongoose';
+import {
+    Schema,
+    model
+} from 'mongoose';
 
 const reparationSchema = new Schema({
     _id: Schema.Types.ObjectId,
@@ -18,4 +21,4 @@ const reparationSchema = new Schema({
 
 const Reparation = model('Reparation', reparationSchema, 'reparations');
 
-export default Reparation ;
+export default Reparation;

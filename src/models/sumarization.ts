@@ -1,6 +1,9 @@
 export {};
 
-import { Schema, model } from 'mongoose';
+import {
+    Schema,
+    model
+} from 'mongoose';
 
 const sumarizationSchema = new Schema({
     _id: Schema.Types.ObjectId,
