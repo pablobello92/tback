@@ -7,6 +7,7 @@ import {
 
 const userLevelSchema = new Schema({
     _id: Schema.Types.ObjectId,
+    id: Number,
     level: Number,
     type: String,
 });

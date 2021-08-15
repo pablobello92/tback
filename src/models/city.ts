@@ -7,6 +7,7 @@ import {
 
 const citySchema = new Schema({
     _id: Schema.Types.ObjectId,
+    id: Number,
     name: String,
     center: {
         lat: Number,
