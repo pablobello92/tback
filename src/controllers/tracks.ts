@@ -14,42 +14,38 @@ import {
 } from './cities';
 import {
 	map,
-	mergeAll,
-	mergeMap,
-	switchMap,
-	tap
+	mergeMap
 } from 'rxjs/operators';
 
 
 //TODO: TYPE THE RETURN OF THE FUNCTIONS
-export const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Observable < Document[] > =>
-	from(Track.find(filter).select(fields).skip(skip).limit(limit).exec());
+export const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Observable < any[] > =>
+	from(Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec());
 
-const getTracksMappingByCity = (city: string, fields: string, skip: number, limit: number): Observable < any > => {
-	return fetchTracks({
-			city: city
-		}, fields, skip, limit)
+const getTracksMappingByCity = (cityId: number, fields: string, skip: number, limit: number): Observable < any > => {
+	return fetchTracks({ cityId }, fields, skip, limit)
 		.pipe(
-			map(tracks => {
+			map((tracks: any[]) => {
 				return {
-					city: city,
+					cityId,
 					startTime: Date.parse(new Date().toDateString()),
-					tracks: tracks
+					tracks
 				};
 			})
 		);
 }
 
-// !CURRENTLY THE SKIP IS 0
-// TODO: Remove LIMIT = 3
+// TODO: Remove LIMIT = 2
 // !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
 // !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
 export const getTracksMapByCity = (fields: string): Observable < any > => {
 	return fetchCities()
 		.pipe(
-			map((cities: Document[]) => cities.map((city: any) => city.name)),
-			mergeMap((cityNames: string[]) => {
-				const observables = cityNames.map((cityName: any) => getTracksMappingByCity(cityName, fields, 0, 3));
+			map((cities: Document[]) => cities.map((city: any) => city.id)),
+			mergeMap((cityIds: number[]) => {
+				const observables = cityIds.map((cityId: number) => 
+					getTracksMappingByCity(cityId, fields, 0, 2)
+				);
 				return forkJoin(...observables);
 			})
 		);
@@ -67,12 +63,9 @@ export const getTracksCallback = (req: any, res: any): void => {
 	const fields: string = 'id ranges city startTime';
 	const offset = parseInt(req.query.offset);
 	const limit = parseInt(req.query.pages);
-	console.log(req.query);
-	console.log(offset, limit);
 	fetchTracks(filter, fields, offset, limit)
 		.subscribe(
 			(tracks: Document[]) => {
-				console.log(tracks);
 				res.send(tracks);
 			}, (err: any) => {
 				console.error(err);

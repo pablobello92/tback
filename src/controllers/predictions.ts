@@ -24,17 +24,6 @@ export const predictRoadsCallback = (req: any, res: any): void => {
     console.log('');
     const fields = 'id city startTime ranges accelerometers';
     getTracksMapByCity(fields)
-        .pipe(
-            tap((trackByCity: any[]) => {
-                trackByCity.forEach((item: any) => {
-                    console.log('-------------------');
-                    console.log(item.city);
-                    console.log(item.startTime);
-                    console.log(item.tracks);
-                    console.log('-------------------');
-                });
-            })
-        )
         .subscribe((result: any) => {
             res.send(['Prediction']);
             res.end();

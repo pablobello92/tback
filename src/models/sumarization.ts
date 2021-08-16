@@ -7,10 +7,11 @@ import {
 
 const sumarizationSchema = new Schema({
     _id: Schema.Types.ObjectId,
-    city: String,
+    cityId: Number,
     date: Number,
     ranges: [{
-        date: Number, // Remove dates!!!!
+        // TODO: Por lo visto tengo que sacar este campo date
+        date: Number,
         start: {
             lat: Number,
             lng: Number

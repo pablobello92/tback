@@ -26,15 +26,15 @@ export interface ISumarizationSegment extends ISegment {
 }
 
 export interface ISumarizingObject {
-    city: string;
+    cityId: number;
     date ? : number;
     tracks: ITrack[];
 }
 
 export interface ISumarizedObject {
-    city: string;
+    cityId: number;
     date: number;
-    sumarizedSegments: ISumarizationSegment[];
+    ranges: ISumarizationSegment[];
 }
 
 //? Convierto un Range en un SumarizationSegment, descartando lo que no me interesa
