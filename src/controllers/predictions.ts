@@ -10,28 +10,23 @@ import {
     Rank
 } from '@tensorflow/tfjs-node';
 import {
-    getTracksMapByCity
+    getTracksMapByCity,
+    sumarizeTracksByCity
 } from './tracks';
 import {
-    map,
-    tap
+    map
 } from 'rxjs/operators';
 import {
     ISumarizedObject,
     ISumarizingObject
 } from '../interfaces/Segment';
-import Prediction from '../models/Prediction';
-
-const errorCallback = (err: any) => {
-    console.error(err);
-    throw err;
-}
+import PredictedRoadTypes from '../models/predictedRoadTypes';
 
 //TODO: pass the data as parameter, it's not a get callback anymore
 const putPredictionsCallback = (req: any, res: any, predictions: any): void => {
-    Prediction.deleteMany({})
+    PredictedRoadTypes.deleteMany({})
         .then((deleteResult: any) => {
-            Prediction.insertMany(predictions)
+            PredictedRoadTypes.insertMany(predictions)
                 .then((insertResponse: any) => {
                     res.send(insertResponse);
                 })
@@ -60,8 +55,26 @@ export const predictRoadsCallback = (req: any, res: any): void => {
             map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
         )
         .subscribe((predictions: ISumarizedObject[]) => {
+            predictions = [{
+                cityId: 0,
+                date: 0,
+                ranges: []
+            },
+            {
+                cityId: 1,
+                date: 0,
+                ranges: []
+            },
+            {
+                cityId: 2,
+                date: 0,
+                ranges: []
+            }];
             putPredictionsCallback(req, res, predictions);
-        }, errorCallback);
+        }, (err: any) => {
+            console.error(err);
+            throw err;
+        });
 
     /*predictRoads()
     .then(response => {
@@ -88,10 +101,6 @@ export const predictAnomaliesCallback = (req: any, res: any): void => {
     res.send(["anomalies predicted!"]);
 }
 
-
-function sumarizeTracksByCity(allData: any[]): any {
-    throw new Error('Function not implemented.');
-}
 /**
  *  Predict() retorna un numero que identifica al tipo de muestra segun orden alfabetico:
  *   Asphalt 0
