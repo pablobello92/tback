@@ -19,6 +19,24 @@ import {
     ISumarizedObject,
 } from '../interfaces/Segment';
 
+//? Aca debe ir la funcion para descartar...
+//? Para c/ciudad traigo las reparaciones y repito el proceso...
+//? AL FINAL LO DE DESCARTAR SEGMENTOS REPARADOS NO LO VOY A IMPLEMENTAR...
+
+export const sumarizeTracksCallback = (req: any, res: any): void => {
+    getTracksMapByCity('cityId startTime ranges')
+    .pipe(
+            map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
+            switchMap((sumarizations: ISumarizedObject[]) => replaceSumarizations(sumarizations))
+        )
+        .subscribe((result: any) => {
+            res.send(result);
+            res.end();
+        }, (error: Error) => {
+            res.send(error);
+            res.end();
+        });
+}
 
 const removeSumarizations = (): Promise<Error | any> => {
     return Sumarization.deleteMany({})
@@ -39,48 +57,22 @@ const replaceSumarizations = (values: any): Observable<Error | any> => {
     );
 }
 
-
-//? Aca debe ir la funcion para descartar...
-//? Para c/ciudad traigo las reparaciones y repito el proceso...
-//? AL FINAL LO DE DESCARTAR SEGMENTOS REPARADOS NO LO VOY A IMPLEMENTAR...
-
-export const sumarizeTracksCallback = (req: any, res: any): void => {
-    getTracksMapByCity('cityId startTime ranges')
-    .pipe(
-            map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
-            switchMap((sumarizations: ISumarizedObject[]) => replaceSumarizations(sumarizations))
-        )
-        .subscribe((result: any) => {
-            res.send(result);
-            res.end();
-        }, (error: Error) => {
-            res.send(error);
-            res.end();
-        });
-}
-
-const getSumarizationsByFilter = async (filter: {}) => {
-    try {
-        const sumarizations: any[] = await Sumarization.find(filter)
-        if (!sumarizations) {
-            return [];
-        }
-        return sumarizations;
-    } catch (error) {
-        throw new Error("Error getting the Sumarizations");
-    }
-}
-
 export const getSumarizationsCallback = (req: any, res: any): void => {
     const filter = {
         cityId: req.query.cityId
     };
     getSumarizationsByFilter(filter)
-        .then(result => {
+        .then((result: any) => {
             res.send(result);
         })
-        .catch(err => {
-            console.error(err);
-            res.send(err);
+        .catch((error: Error) => {
+            res.send(error);
+        })
+        .finally(() => {
+            res.end();
         });
 }
+
+const getSumarizationsByFilter = (filter: {}): Promise<Error | any> =>
+    Sumarization.find(filter).lean()
+        .catch((error: any) => new Error(error));
