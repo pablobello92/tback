@@ -31,12 +31,6 @@ import {
 
 import Track from './../models/track';
 
-// TODO: Refactorizar esto... deberia ir en un archivo aparte de configuracion o de constantes
-// TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
-// TODO: Date() y el date del segmento
-const NEW_DATA_WEIGHT = 0.6;
-const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
-
 export const getTracksCallback = (req: any, res: any): void => {
 	const filter = {
 		userId: parseInt(req.query.userId),
@@ -88,8 +82,10 @@ const getTracksMappingByCity = (cityId: number, fields: string, skip: number, li
 			})
 		);
 
-const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<any[]> =>
-	Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec();
+const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<Error | any[]> => {
+	return Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec()
+		.catch((error: any) => new Error(error));
+}
 
 export const sumarizeTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
 	items.map((item: ISumarizingObject) => sumarizeTracks(item));
@@ -137,12 +133,6 @@ const findMatchingSegment = (
 ): ISumarizationSegment | undefined =>
 		array.find((s: ISumarizationSegment) => matches(mySegment, s));
 
-const updateMatchingSegment = (segment: ISumarizationSegment, matchingSegment: ISumarizationSegment): void => {
-	matchingSegment.score = matchingSegment.score * OLD_DATA_WEIGHT + segment.score * NEW_DATA_WEIGHT;
-	matchingSegment.date = segment.date;
-	matchingSegment.accuracy++;
-}
-
 //? Convierto un Range en un SumarizationSegment, descartando lo que no me interesa
 const mapRangeToSumarizingSegment = (range: IRange): ISumarizationSegment => {
 	const {
@@ -165,4 +155,18 @@ const matches = (a: ISumarizationSegment, b: ISumarizationSegment): boolean => {
 		distanceToStart < length &&
 		distanceToEnd < length
 	);
+}
+
+// TODO: Refactorizar esto... deberia ir en un archivo aparte de configuracion o de constantes
+// TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
+// TODO: Date() y el date del segmento
+// TODO: Make this a pure function!!
+
+const NEW_DATA_WEIGHT = 0.6;
+const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
+
+const updateMatchingSegment = (newS: ISumarizationSegment, oldS: ISumarizationSegment): void => {
+	oldS.score = oldS.score * OLD_DATA_WEIGHT + newS.score * NEW_DATA_WEIGHT;
+	oldS.date = newS.date;
+	oldS.accuracy++;
 }

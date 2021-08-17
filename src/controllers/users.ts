@@ -5,36 +5,32 @@ import {
 import User from './../models/user';
 
 export const getUserCallback = (req: any, res: any): void => {
-    getUserByFilter({
-            username: req.query.username
-        })
-        .then(user => {
+    getUserByFilter({ username: req.query.username })
+        .then((user: any) => {
             res.send(user);
         })
-        .catch(err => {
-            console.error(err);
+        .catch((error: Error) => {
+            res.send(error);
         });
 }
 
-export const getUserByFilter = async (filter: {}) => {
-    try {
-        const user: Document = await User.findOne(filter);
-        if (!user) {
-            return null;
-        }
-        return user;
-    } catch (error) {
-        throw new Error(error);
-    }
+export const getUserByFilter = (filter: {}): Promise<Error | any> => {
+    return User.findOne(filter).lean()
+        .catch((error: any) => new Error(error));
+}
+
+const updateUser = (user: any): Promise<Error | any> => {
+    return User.updateOne({}, user)
+        .then((result: any) => result)
+        .catch((error: any) => new Error(error));
 }
 
 export const updateUserCallback = (req: any, res: any): void => {
-    const user = req.body;
-    User.update({}, user)
-        .then(user => {
-            res.send(["model updated!"]);
+    updateUser(req.body)
+        .then((user: any) => {
+            res.send(user);
         })
-        .catch(err => {
-            res.send(["Error!"]);
+        .catch((error: Error) => {
+            res.send(error);
         });
 }

@@ -15,6 +15,10 @@ import {
     map,
     switchMap
 } from 'rxjs/operators';
+import { 
+    from,
+    Observable
+} from 'rxjs';
 import {
     ISumarizedObject,
     ISumarizingObject
@@ -24,15 +28,24 @@ import {
 } from './mocks';
 import PredictedRoadTypes from '../models/predictedRoadTypes';
 
-const removePredictions = (): any =>
-    PredictedRoadTypes.deleteMany({})
-        .then((res: any) => res)
-        .catch((error: any) => error);
-
-const replacePredictions = (values: any): Promise<any> => 
-    removePredictions()
-        .then((res: any) => PredictedRoadTypes.insertMany(values))
+const removePredictions = (): Promise<Error | any> => {
+    return PredictedRoadTypes.deleteMany({})
+        .then((result: any) => result)
         .catch((error: any) => new Error(error));
+}
+
+const insertPredictions = (values: any): Promise<Error | any> => {
+    return PredictedRoadTypes.insertMany(values)
+        .then((result: any) => result)
+        .catch((error: any) => new Error(error));
+}
+
+const replacePredictions = (values: any): Observable<Error | any> => {
+    return from(removePredictions())
+    .pipe(
+        switchMap((res: any) => insertPredictions(values))
+    );
+}
 
 const predictSample = async (sample: any) => {
     try {
@@ -62,7 +75,7 @@ export const predictRoadsCallback = (req: any, res: any): void => {
         .subscribe((result: any) => {
             res.send(result);
             res.end();
-        }, (error: any) => {
+        }, (error: Error) => {
             res.send(error);
         });
 
