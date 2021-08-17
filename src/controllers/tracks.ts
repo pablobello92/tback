@@ -39,18 +39,18 @@ const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
 
 export const getTracksCallback = (req: any, res: any): void => {
 	const filter = {
-		username: req.query.username,
-		city: req.query.city,
+		userId: parseInt(req.query.userId),
+		cityId: parseInt(req.query.cityId),
 		startTime: {
 			$gte: parseFloat(req.query.from),
 			$lte: parseFloat(req.query.to)
 		}
 	};
-	const fields: string = 'id ranges city startTime';
+	const fields: string = 'cityId startTime ranges';
 	const offset = parseInt(req.query.offset);
 	const limit = parseInt(req.query.pages);
 	fetchTracks(filter, fields, offset, limit)
-	.then((result: Document[]) => {
+	.then((result: any[]) => {
 		res.send(result);
 	})
 	.catch((error: any) => {
@@ -88,7 +88,6 @@ const getTracksMappingByCity = (cityId: number, fields: string, skip: number, li
 			})
 		);
 
-//TODO: TYPE THE RETURN OF THE FUNCTIONS
 const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<any[]> =>
 	Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec();
 
