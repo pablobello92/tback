@@ -1,7 +1,5 @@
 export {};
-import {
-    sample
-} from './mocks';
+
 import {
     Tensor4D,
     tensor4d,
@@ -14,31 +12,37 @@ import {
     sumarizeTracksByCity
 } from './tracks';
 import {
-    map
+    map,
+    switchMap
 } from 'rxjs/operators';
 import {
     ISumarizedObject,
     ISumarizingObject
 } from '../interfaces/Segment';
+import {
+    tensorSample
+} from './mocks';
 import PredictedRoadTypes from '../models/predictedRoadTypes';
 
-//TODO: pass the data as parameter, it's not a get callback anymore
-const putPredictionsCallback = (req: any, res: any, predictions: any): void => {
+const removePredictions = (): any =>
     PredictedRoadTypes.deleteMany({})
-        .then((deleteResult: any) => {
-            PredictedRoadTypes.insertMany(predictions)
-                .then((insertResponse: any) => {
-                    res.send(insertResponse);
-                })
-                .catch((err: any) => {
-                    res.send(err);
-                    res.end();
-                });
-        })
-        .catch((error: any) => {
-            res.send(error);
-            res.end();
-        });
+        .then((res: any) => res)
+        .catch((error: any) => error);
+
+const replacePredictions = (values: any): Promise<any> => 
+    removePredictions()
+        .then((res: any) => PredictedRoadTypes.insertMany(values))
+        .catch((error: any) => new Error(error));
+
+const predictSample = async (sample: any) => {
+    try {
+        const tensor: Tensor4D = tensor4d(sample);
+        const loadedModel = await loadLayersModel('file://src/assets/tensorFlowCore/roads/model.json');
+        const result: Tensor < Rank > = loadedModel.predict(tensor) as Tensor;
+        return result.dataSync();
+    } catch (err) {
+        throw new Error(err);
+    }
 }
 
 // El resultado es el sample...
@@ -53,48 +57,22 @@ export const predictRoadsCallback = (req: any, res: any): void => {
     getTracksMapByCity('cityId startTime ranges accelerometers')
         .pipe(
             map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
+            switchMap((predictions: ISumarizedObject[]) => replacePredictions(predictions))
         )
-        .subscribe((predictions: ISumarizedObject[]) => {
-            predictions = [{
-                cityId: 0,
-                date: 0,
-                ranges: []
-            },
-            {
-                cityId: 1,
-                date: 0,
-                ranges: []
-            },
-            {
-                cityId: 2,
-                date: 0,
-                ranges: []
-            }];
-            putPredictionsCallback(req, res, predictions);
-        }, (err: any) => {
-            console.error(err);
-            throw err;
+        .subscribe((result: any) => {
+            res.send(result);
+            res.end();
+        }, (error: any) => {
+            res.send(error);
         });
 
-    /*predictRoads()
+    /* predictSample(tensorSample)
     .then(response => {
         res.send(response);
     }, error => {
         console.error(error);
         res.send(error);
-    });*/
-}
-
-const predictRoads = async () => {
-    try {
-        const tensor: Tensor4D = tensor4d(sample);
-        const loadedModel = await loadLayersModel('file://src/assets/tensorFlowCore/roads/model.json');
-        const result: Tensor < Rank > = loadedModel.predict(tensor) as Tensor;
-        return result.dataSync();
-    } catch (err) {
-        console.error(err);
-        throw new Error(err);
-    }
+    }); */
 }
 
 export const predictAnomaliesCallback = (req: any, res: any): void => {

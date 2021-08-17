@@ -13,7 +13,7 @@ import {
 	Document
 } from 'mongoose';
 import {
-	fetchCities
+	fetchCityFields
 } from './cities';
 import {
 	map,
@@ -50,13 +50,12 @@ export const getTracksCallback = (req: any, res: any): void => {
 	const offset = parseInt(req.query.offset);
 	const limit = parseInt(req.query.pages);
 	fetchTracks(filter, fields, offset, limit)
-		.subscribe(
-			(tracks: Document[]) => {
-				res.send(tracks);
-			}, (err: any) => {
-				console.error(err);
-				throw (err);
-			});
+	.then((result: Document[]) => {
+		res.send(result);
+	})
+	.catch((error: any) => {
+		res.send(new Error(error));
+	});
 }
 
 //? ----------------------------------------------------
@@ -66,23 +65,19 @@ export const getTracksCallback = (req: any, res: any): void => {
 // TODO: Remove LIMIT = 2
 // !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
 // !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
-export const getTracksMapByCity = (fields: string): Observable < any > => {
-	return fetchCities()
+export const getTracksMapByCity = (fields: string): Observable < any > =>
+	from(fetchCityFields('cityId'))
 		.pipe(
-			map((cities: Document[]) => cities.map((city: any) => city.id)),
 			mergeMap((cityIds: number[]) => {
 				const observables = cityIds.map((cityId: number) =>
 					getTracksMappingByCity(cityId, fields, 0, 2)
 				);
-				return forkJoin(...observables);
+				return forkJoin(observables);
 			})
 		);
-}
 
-const getTracksMappingByCity = (cityId: number, fields: string, skip: number, limit: number): Observable < any > => {
-	return fetchTracks({
-			cityId
-		}, fields, skip, limit)
+const getTracksMappingByCity = (cityId: number, fields: string, skip: number, limit: number): Observable < any > =>
+	from(fetchTracks({ cityId }, fields, skip, limit))
 		.pipe(
 			map((tracks: any[]) => {
 				return {
@@ -92,16 +87,13 @@ const getTracksMappingByCity = (cityId: number, fields: string, skip: number, li
 				};
 			})
 		);
-}
-
 
 //TODO: TYPE THE RETURN OF THE FUNCTIONS
-const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Observable < any[] > =>
-	from(Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec());
+const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<any[]> =>
+	Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec();
 
-export const sumarizeTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] => {
-	return items.map((item: ISumarizingObject) => sumarizeTracks(item));
-}
+export const sumarizeTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
+	items.map((item: ISumarizingObject) => sumarizeTracks(item));
 
 //? 3) Ejecuto la sumarizacion de Tracks de una Ciudad
 const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
@@ -140,9 +132,11 @@ const addSegment = (sNew: ISumarizationSegment, array: ISumarizationSegment[]): 
 	}
 }
 
-const findMatchingSegment = (mySegment: ISumarizationSegment, array: ISumarizationSegment[]): ISumarizationSegment | undefined => {
-	return array.find((s: ISumarizationSegment) => matches(mySegment, s));
-}
+const findMatchingSegment = (
+	mySegment: ISumarizationSegment,
+	array: ISumarizationSegment[]
+): ISumarizationSegment | undefined =>
+		array.find((s: ISumarizationSegment) => matches(mySegment, s));
 
 const updateMatchingSegment = (segment: ISumarizationSegment, matchingSegment: ISumarizationSegment): void => {
 	matchingSegment.score = matchingSegment.score * OLD_DATA_WEIGHT + segment.score * NEW_DATA_WEIGHT;

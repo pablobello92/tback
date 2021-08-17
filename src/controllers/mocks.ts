@@ -37831,7 +37831,7 @@ export const sumarizingObjects: any[] = [{
     ]
 }];
 
-export const sample: any[] = [[
+export const tensorSample: any[] = [[
     [[-0.9959879 ],
     [-0.15322888],
     [ 0.51714754],
