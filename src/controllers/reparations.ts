@@ -3,7 +3,7 @@ import Reparation from './../models/reparation';
 
 export const getReparationsCallback = (req: any, res: any): void => {
     const filter = {
-        city: req.query.city
+        cityId: parseInt(req.query.cityId)
     };
     Reparation.find(filter)
         .then(reparations => {
