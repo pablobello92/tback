@@ -13,8 +13,10 @@ export const loginCallBack = (req: any, res: any): void => {
         .then((user: any) => {
             res.send(user);
         })
-        .catch(error => {
-            console.error(error);
+        .catch((error: Error) => {
             res.send(error);
         })
+        .finally(() => {
+            res.end();
+        });
 };

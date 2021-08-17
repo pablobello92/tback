@@ -9,6 +9,9 @@ export const getCitiesCallback = (req: any, res: any): void => {
     })
     .catch((error: Error) => {
         res.send(error);
+    })
+    .finally(() => {
+        res.end();
     });
 };
 

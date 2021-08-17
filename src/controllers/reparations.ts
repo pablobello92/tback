@@ -6,20 +6,26 @@ export const getReparationsCallback = (req: any, res: any): void => {
         cityId: parseInt(req.query.cityId)
     };
     Reparation.find(filter)
-        .then(reparations => {
-            res.send(reparations);
+        .then((result: any) => {
+            res.send(result)
         })
-        .catch(err => {
-            console.error(err);
+        .catch((error: any) => {
+            res.send(new Error(error));
+        })
+        .finally(() => {
+            res.end();
         });
 };
 
 export const putReparationCallback = (req: any, res: any): void => {
     Reparation.insertMany([req.body])
-        .then(response => {
-            res.send(response)
+        .then((result: any) => {
+            res.send(result)
         })
-        .catch(error => {
-            res.send(error);
+        .catch((error: any) => {
+            res.send(new Error(error));
+        })
+        .finally(() => {
+            res.end();
         });
 };

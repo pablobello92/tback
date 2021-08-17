@@ -47,9 +47,12 @@ export const getTracksCallback = (req: any, res: any): void => {
 	.then((result: any[]) => {
 		res.send(result);
 	})
-	.catch((error: any) => {
-		res.send(new Error(error));
-	});
+	.catch((error: Error) => {
+		res.send(error);
+	})
+	.finally(() => {
+        res.end();
+    });
 }
 
 //? ----------------------------------------------------

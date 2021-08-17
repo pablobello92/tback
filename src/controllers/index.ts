@@ -25,5 +25,5 @@ export const indexCallback = (req: any, res: any): void => {
 };
 
 export const notFoundCallback = (req: any, res: any): void => {
-    res.end('Route not found!');
+    res.end(new Error('Route not found'));
 };

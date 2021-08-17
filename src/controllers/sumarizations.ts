@@ -55,6 +55,7 @@ export const sumarizeTracksCallback = (req: any, res: any): void => {
             res.end();
         }, (error: Error) => {
             res.send(error);
+            res.end();
         });
 }
 
