@@ -10,9 +10,6 @@ import {
 	forkJoin
 } from 'rxjs';
 import {
-	Document
-} from 'mongoose';
-import {
 	fetchCityFields
 } from './cities';
 import {
@@ -20,6 +17,7 @@ import {
 	mergeMap
 } from 'rxjs/operators';
 import {
+	ISegment,
 	ISumarizationSegment,
 	ISumarizedObject,
 	ISumarizingObject
@@ -56,7 +54,7 @@ export const getTracksCallback = (req: any, res: any): void => {
 }
 
 //? ----------------------------------------------------
-//? FUNCIONALIDAD COMPARTIDA PARA SUMARIZACION DE TRACKS
+//? FUNCIONALIDAD COMPARTIDA ENTRE SUMARIZACION Y PREDICCION
 //? ----------------------------------------------------
 
 // TODO: Remove LIMIT = 2
@@ -90,10 +88,29 @@ const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: numbe
 		.catch((error: any) => new Error(error));
 }
 
+const findMatchingSegment = (mySegment: ISumarizationSegment, array: ISumarizationSegment[]): number =>
+	array.findIndex((s: ISumarizationSegment) => matches(mySegment, s));
+
+const matches = (a: ISumarizationSegment, b: ISumarizationSegment): boolean => {
+	const center: any = getCenter([a.start, a.end]);
+	const length: number = getDistance(b.start, b.end);
+	const distanceToStart: number = getDistance(b.start, center);
+	const distanceToEnd: number = getDistance(b.end, center);
+	return (
+		distanceToStart < length &&
+		distanceToEnd < length
+	);
+}
+
+/**
+ * ? -----------------
+ * ? SUMARIZACION
+ * ? -----------------
+ */
+
 export const sumarizeTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
 	items.map((item: ISumarizingObject) => sumarizeTracks(item));
 
-//? 3) Ejecuto la sumarizacion de Tracks de una Ciudad
 const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
 	const date = Date.parse(new Date().toDateString());
 	const sumarizedSegments: ISumarizationSegment[] = [];
@@ -102,7 +119,7 @@ const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
 		sumarizeNextTrack(sumarizedSegments, track);
 	});
 
-	return <ISumarizedObject > {
+	return <ISumarizedObject> {
 		cityId: item.cityId,
 		date,
 		ranges: sumarizedSegments
@@ -116,27 +133,11 @@ const sumarizeNextTrack = (array: ISumarizationSegment[], track: ITrack): void =
 	segments = ranges.map((r: IRange) => mapRangeToSumarizingSegment(r));
 
 	segments.forEach((s: ISumarizationSegment) => {
-		addSegment(s, array);
+		const toPush = addSumarizingSegment(s, array);
+		array.push(toPush);
 	});
 }
 
-const addSegment = (sNew: ISumarizationSegment, array: ISumarizationSegment[]): void => {
-	const matchingSegment = findMatchingSegment(sNew, array);
-	if (matchingSegment) {
-		updateMatchingSegment(sNew, matchingSegment);
-	} else {
-		sNew.accuracy = 1;
-		array.push(sNew);
-	}
-}
-
-const findMatchingSegment = (
-	mySegment: ISumarizationSegment,
-	array: ISumarizationSegment[]
-): ISumarizationSegment | undefined =>
-		array.find((s: ISumarizationSegment) => matches(mySegment, s));
-
-//? Convierto un Range en un SumarizationSegment, descartando lo que no me interesa
 const mapRangeToSumarizingSegment = (range: IRange): ISumarizationSegment => {
 	const {
 		speed,
@@ -145,31 +146,93 @@ const mapRangeToSumarizingSegment = (range: IRange): ISumarizationSegment => {
 	} = range;
 	return <ISumarizationSegment > {
 		...relevantFields,
-		accuracy: 0
+		accuracy: 1
 	};
 }
 
-const matches = (a: ISumarizationSegment, b: ISumarizationSegment): boolean => {
-	const center: any = getCenter([a.start, a.end]);
-	const length: number = getDistance(b.start, b.end);
-	const distanceToStart: number = getDistance(b.start, center);
-	const distanceToEnd: number = getDistance(b.end, center);
-	return (
-		distanceToStart < length &&
-		distanceToEnd < length
-	);
+const addSumarizingSegment = (toAdd: ISumarizationSegment, array: ISumarizationSegment[]): ISumarizationSegment => {
+	const index = findMatchingSegment(toAdd, array);
+	if (index === -1) {
+		return toAdd;
+	} else {
+		const matching = array.splice(index, 1)[0];
+		const merged = getMergedSumarizingSegment(toAdd, matching);
+		return merged;
+	}
 }
 
 // TODO: Refactorizar esto... deberia ir en un archivo aparte de configuracion o de constantes
 // TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
 // TODO: Date() y el date del segmento
-// TODO: Make this a pure function!!
+// TODO: estoy dando por hecho que el nuevo tiene fecha mas reciente...
+// TODO: comparar fechas y ahi decido cual es el new y el old
 
 const NEW_DATA_WEIGHT = 0.6;
 const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
 
-const updateMatchingSegment = (newS: ISumarizationSegment, oldS: ISumarizationSegment): void => {
-	oldS.score = oldS.score * OLD_DATA_WEIGHT + newS.score * NEW_DATA_WEIGHT;
-	oldS.date = newS.date;
-	oldS.accuracy++;
+const getMergedSumarizingSegment = (toAdd: ISumarizationSegment, matching: ISumarizationSegment): ISumarizationSegment => {
+	matching.score = matching.score * OLD_DATA_WEIGHT + toAdd.score * NEW_DATA_WEIGHT;
+	matching.date = toAdd.date;
+	matching.accuracy++;
+	return matching;
 }
+
+/**
+ * ? -----------------
+ * ? PREDICCION
+ * ? -----------------
+ */
+
+export const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
+	items.map((item: ISumarizingObject) => sampleTracks(item));
+
+const sampleTracks = (item: ISumarizingObject): ISumarizedObject => {
+	const date = Date.parse(new Date().toDateString());
+	const sumarizedSegments: ISumarizationSegment[] = [];
+
+	item.tracks.forEach((track: ITrack) => {
+		sampleNextTrack(sumarizedSegments, track);
+	});
+
+	return <ISumarizedObject> {
+		cityId: item.cityId,
+		date,
+		ranges: sumarizedSegments
+	};
+}
+
+const sampleNextTrack = (array: ISumarizationSegment[], track: ITrack): void => {
+	let ranges: IRange[] = track.ranges;
+	let segments: ISegment[] = [];
+
+	segments = ranges.map((r: IRange) => mapRangeToSegment(r));
+
+	segments.forEach((s: ISumarizationSegment) => {
+		const toPush = addSegment(s, array);
+		array.push(toPush);
+	});
+}
+
+const mapRangeToSegment = (range: IRange): ISegment => {
+	const {
+		speed,
+		stabilityEvents,
+		...relevantFields
+	} = range;
+	return <ISegment > {
+		...relevantFields
+	};
+}
+
+const addSegment = (toAdd: ISumarizationSegment, array: ISumarizationSegment[]): ISegment => {
+	const index = findMatchingSegment(toAdd, array);
+	if (index === -1) {
+		return toAdd;
+	} else {
+		const matching = array.splice(index, 1)[0];
+		const merged = getMergedSegment(toAdd, matching);
+		return merged;
+	}
+}
+
+const getMergedSegment = (toAdd: ISumarizationSegment, matching: ISumarizationSegment): ISegment => matching;

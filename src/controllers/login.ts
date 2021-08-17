@@ -1,7 +1,7 @@
 export {};
 
 import {
-    getUserByFilter
+    getUser
 } from './users';
 
 export const loginCallBack = (req: any, res: any): void => {
@@ -9,7 +9,7 @@ export const loginCallBack = (req: any, res: any): void => {
         username: req.body.username,
         password: req.body.password
     };
-    getUserByFilter(filter)
+    getUser(filter)
         .then((user: any) => {
             res.send(user);
         })

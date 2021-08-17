@@ -2,7 +2,7 @@ export {};
 import User from './../models/user';
 
 export const getUserCallback = (req: any, res: any): void => {
-    getUserByFilter({ username: req.query.username })
+    getUser({ username: req.query.username })
         .then((user: any) => {
             res.send(user);
         })
@@ -27,7 +27,7 @@ export const updateUserCallback = (req: any, res: any): void => {
         });
 }
 
-export const getUserByFilter = (filter: {}): Promise<Error | any> => {
+export const getUser = (filter: {}): Promise<Error | any> => {    
     return User.findOne(filter).lean()
         .catch((error: any) => new Error(error));
 }

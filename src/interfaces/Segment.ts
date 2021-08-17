@@ -34,5 +34,5 @@ export interface ISumarizingObject {
 export interface ISumarizedObject {
     cityId: number;
     date: number;
-    ranges: ISumarizationSegment[];
+    ranges: ISegment[] | ISumarizationSegment[];
 }

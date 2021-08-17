@@ -87,6 +87,10 @@ class PredictionTypes {
     public getAnomalyType(id: number): PredictionType {
         return this.anomalyTypes.find((item: PredictionType) => item.id === id);
     }
+
+    public getSample(x: number, y: number, z: number, xdiff: number, ydiff: number, zdiff: number): number[][] {
+        return [[x], [y], [z], [xdiff], [ydiff], [zdiff]];
+    }
 }
 
 const removePredictions = (): Promise<Error | any> => {
@@ -125,6 +129,10 @@ export const predictRoadsCallback = (req: any, res: any): void => {
     console.log('----------------');
     console.log('PREDECIR SUELOS');
     console.log('----------------');
+    
+    // TODO: añadir soporte para filtrado en getTracksMapByCity()
+    // TODO: agregar filtrado por campo req.body.linkedCities
+
     getTracksMapByCity('cityId startTime ranges accelerometers')
         .pipe(
             map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
@@ -146,6 +154,13 @@ export const predictRoadsCallback = (req: any, res: any): void => {
         res.send(error);
     }); */
 }
+
+
+/**
+ * ?------------------
+ * ? ANOMALIAS
+ * * ?------------------
+ */
 
 export const predictAnomaliesCallback = (req: any, res: any): void => {
     res.send(["anomalies predicted!"]);
