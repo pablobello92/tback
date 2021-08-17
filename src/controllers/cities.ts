@@ -15,9 +15,7 @@ export const getCitiesCallback = (req: any, res: any): void => {
     });
 };
 
-// TODO: Refactor the entire Backend: add this catch(Error()) to every Mongoose execution
-// TODO: test this approach!
-export const fetchCityFields = (fields?: string): Promise<Error | any[]> => {
-    return City.find().lean().select(fields).exec()
-    .catch((error: any) => new Error(error));
-}
+export const fetchCityFields = (fields?: string): Promise<Error | any[]> =>
+    City.find().lean().select(fields)
+        .then((result: any[]) => result.map(((item: any) => item.id)))
+        .catch((error: any) => new Error(error));

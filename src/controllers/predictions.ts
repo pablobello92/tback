@@ -9,7 +9,7 @@ import {
 } from '@tensorflow/tfjs-node';
 import {
     getTracksMapByCity,
-    sumarizeTracksByCity
+    sampleTracksByCity
 } from './tracks';
 import {
     map,
@@ -112,18 +112,6 @@ const replacePredictions = (values: any): Observable<Error | any> => {
     );
 }
 
-const predictSample = async (sample: any) => {
-    try {
-        const tensor: Tensor4D = tensor4d(sample);
-        const loadedModel = await loadLayersModel('file://src/assets/tensorFlowCore/roads/model.json');
-        // Predict() retorna un numero que identifica al tipo de muestra segun orden alfabetico:
-        const result: Tensor < Rank > = loadedModel.predict(tensor) as Tensor;
-        return result.dataSync();
-    } catch (err) {
-        throw new Error(err);
-    }
-}
-
 export const predictRoadsCallback = (req: any, res: any): void => {
     console.log('\n'.repeat(20));
     console.log('----------------');
@@ -135,7 +123,7 @@ export const predictRoadsCallback = (req: any, res: any): void => {
 
     getTracksMapByCity('cityId startTime ranges accelerometers')
         .pipe(
-            map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
+            map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
             switchMap((predictions: ISumarizedObject[]) => replacePredictions(predictions))
         )
         .subscribe((result: any) => {
@@ -153,6 +141,18 @@ export const predictRoadsCallback = (req: any, res: any): void => {
         console.error(error);
         res.send(error);
     }); */
+}
+
+const predictSample = async (sample: any) => {
+    try {
+        const tensor: Tensor4D = tensor4d(sample);
+        const loadedModel = await loadLayersModel('file://src/assets/tensorFlowCore/roads/model.json');
+        // Predict() retorna un numero que identifica al tipo de muestra segun orden alfabetico:
+        const result: Tensor < Rank > = loadedModel.predict(tensor) as Tensor;
+        return result.dataSync();
+    } catch (err) {
+        throw new Error(err);
+    }
 }
 
 

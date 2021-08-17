@@ -61,7 +61,7 @@ export const getTracksCallback = (req: any, res: any): void => {
 // !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
 // !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
 export const getTracksMapByCity = (fields: string): Observable < any > =>
-	from(fetchCityFields('cityId'))
+	from(fetchCityFields('id'))
 		.pipe(
 			mergeMap((cityIds: number[]) => {
 				const observables = cityIds.map((cityId: number) =>
@@ -219,7 +219,7 @@ const mapRangeToSegment = (range: IRange): ISegment => {
 		stabilityEvents,
 		...relevantFields
 	} = range;
-	return <ISegment > {
+	return <ISegment> {
 		...relevantFields
 	};
 }
