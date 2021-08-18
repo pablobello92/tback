@@ -191,11 +191,12 @@ export const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject
 	items.map((item: ISumarizingObject) =>
 		<ISumarizedObject> {
 			cityId: item.cityId,
+			date: Date.parse(new Date().toDateString()),
 			ranges: sampleTracks(item)
 		}
 	);
 
-const sampleTracks = (item: ISumarizingObject): ISumarizationSegment[] => {
+const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
 	const result: IPredictionSegment[] = [];
 
 	let ranges: IRange[] = [];
@@ -223,22 +224,24 @@ const sampleTracks = (item: ISumarizingObject): ISumarizationSegment[] => {
 	return result;
 }
 
-const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment =>
-	<IPredictionSegment> {
+const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
+	const {
+		id,
+		samples,
+		...relevantFields
+	} = matching;
+	return <IPredictionSegment> {
+		...relevantFields,
 		id: [...toAdd.id, ...matching.id],
-		start: matching.start,
-		end: matching.end,
-		date: matching.date,
-		score: matching.score,
-		distance: matching.distance,
 		samples: [...toAdd.samples, ...matching.samples]
 	};
+}
 
 const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
 	const {
+		id,
 		speed,
 		stabilityEvents,
-		id,
 		...relevantFields
 	} = range;
 	return <IPredictionSegment> {

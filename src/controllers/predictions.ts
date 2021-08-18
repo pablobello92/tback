@@ -106,11 +106,6 @@ export const predictRoadsCallback = (req: express.Request, res: express.Response
     getTracksMapByCity('cityId startTime ranges accelerometers')
         .pipe(
             map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
-            tap((predictions: ISumarizedObject[]) => {
-                predictions.forEach((p: ISumarizedObject) => {
-                    p.date = Date.parse(new Date().toDateString());
-                });
-            }) ,
             switchMap((predictions: ISumarizedObject[]) => replacePredictions(predictions))
         )
         .subscribe((result: any) => {

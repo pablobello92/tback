@@ -5,7 +5,7 @@ import {
     model
 } from 'mongoose';
 
-// TODO: definir el modelo
+
 const predictedRoadTypesSchema = new Schema({
     _id: Schema.Types.ObjectId,
     cityId: Number,
@@ -19,10 +19,12 @@ const predictedRoadTypesSchema = new Schema({
             lat: Number,
             lng: Number
         },
+        date: Number,
         score: Number,
         distance: Number,
-        accuracy: Number
-    }],
+        id: [Number],
+        samples: [[[Number]]]
+    }]
 });
 
 const PredictedRoadTypes = model('PredictedRoadTypes', predictedRoadTypesSchema, 'predictedRoadTypes');
