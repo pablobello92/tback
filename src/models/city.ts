@@ -1,13 +1,16 @@
 export {};
 
-const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+import { Schema, model } from 'mongoose';
 
 const citySchema = new Schema({
-    _id: mongoose.Schema.Types.ObjectId,
+    _id: Schema.Types.ObjectId,
     name: String,
+    center: {
+        lat: Number,
+        lng: Number
+    }
 });
 
-const City = mongoose.model('City', citySchema, 'cities', false);
+const City = model('City', citySchema, 'cities', false);
 
-module.exports = City;
+export default City ;
