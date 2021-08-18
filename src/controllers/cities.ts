@@ -1,8 +1,8 @@
 export {};
-
+import express from 'express';
 import City from './../models/city';
 
-export const getCitiesCallback = (req: any, res: any): void => {
+export const getCitiesCallback = (req: express.Request, res: express.Response): void => {
     fetchCityFields()
     .then((result: any[]) => {
         res.send(result);

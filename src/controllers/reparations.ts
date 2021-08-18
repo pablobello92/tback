@@ -1,9 +1,10 @@
 export {};
+import express from 'express';
 import Reparation from './../models/reparation';
 
-export const getReparationsCallback = (req: any, res: any): void => {
+export const getReparationsCallback = (req: express.Request, res: express.Response): void => {
     const filter = {
-        cityId: parseInt(req.query.cityId)
+        cityId: parseInt(req.query.cityId.toString())
     };
     Reparation.find(filter)
         .then((result: any) => {
@@ -17,7 +18,7 @@ export const getReparationsCallback = (req: any, res: any): void => {
         });
 };
 
-export const putReparationCallback = (req: any, res: any): void => {
+export const putReparationCallback = (req: express.Request, res: express.Response): void => {
     Reparation.insertMany([req.body])
         .then((result: any) => {
             res.send(result)

@@ -1,5 +1,8 @@
 export {};
 
+import express from 'express';
+import PredictedRoadTypes from '../models/predictedRoadTypes';
+
 import {
     Tensor4D,
     tensor4d,
@@ -27,7 +30,6 @@ import {
 import {
     tensorSample
 } from './mocks';
-import PredictedRoadTypes from '../models/predictedRoadTypes';
 
 interface PredictionType {
     id: number;
@@ -94,26 +96,7 @@ class PredictionTypes {
     }
 }
 
-const removePredictions = (): Promise<Error | any> => {
-    return PredictedRoadTypes.deleteMany({})
-        .then((result: any) => result)
-        .catch((error: any) => new Error(error));
-}
-
-const insertPredictions = (values: any): Promise<Error | any> => {
-    return PredictedRoadTypes.insertMany(values)
-        .then((result: any) => result)
-        .catch((error: any) => new Error(error));
-}
-
-const replacePredictions = (values: any): Observable<Error | any> => {
-    return from(removePredictions())
-    .pipe(
-        switchMap((res: any) => insertPredictions(values))
-    );
-}
-
-export const predictRoadsCallback = (req: any, res: any): void => {
+export const predictRoadsCallback = (req: express.Request, res: express.Response): void => {
     console.log('\n'.repeat(20));
     console.log('----------------');
     console.log('PREDECIR SUELOS');
@@ -129,15 +112,15 @@ export const predictRoadsCallback = (req: any, res: any): void => {
                 predictions.forEach((p: ISumarizedObject) => {
                     p.date = Date.parse(new Date().toDateString());
                 });
-                return predictions;
-            }),
+            }) ,
             switchMap((predictions: ISumarizedObject[]) => replacePredictions(predictions))
         )
         .subscribe((result: any) => {
-            res.send(result);
+            res.status(200).send(result);
             res.end();
         }, (error: Error) => {
-            res.send(error);
+            console.error(error);
+            res.status(500).send(error);
             res.end();
         });
 
@@ -162,6 +145,25 @@ const predictSample = async (sample: any) => {
     }
 }
 
+const removePredictions = (): Promise<Error | any> => {
+    return PredictedRoadTypes.deleteMany({})
+        .then((result: any) => result)
+        .catch((error: any) => new Error(error));
+}
+
+const insertPredictions = (values: any): Promise<Error | any> => {
+    return PredictedRoadTypes.insertMany(values)
+        .then((result: any) => result)
+        .catch((error: any) => new Error(error));
+}
+
+const replacePredictions = (values: any): Observable<Error | any> => {
+    return from(removePredictions())
+    .pipe(
+        switchMap((res: any) => insertPredictions(values))
+    );
+}
+
 
 /**
  * ?------------------
@@ -169,6 +171,6 @@ const predictSample = async (sample: any) => {
  * * ?------------------
  */
 
-export const predictAnomaliesCallback = (req: any, res: any): void => {
+export const predictAnomaliesCallback = (req: express.Request, res: express.Response): void => {
     res.send(["anomalies predicted!"]);
 }

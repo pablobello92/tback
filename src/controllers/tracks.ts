@@ -1,5 +1,8 @@
 export {};
 
+import express from 'express';
+import Track from './../models/track';
+
 import {
 	getCenter,
 	getDistance
@@ -27,20 +30,18 @@ import {
 	IPredictionSegment
 } from '../interfaces/Track';
 
-import Track from './../models/track';
-
-export const getTracksCallback = (req: any, res: any): void => {
+export const getTracksCallback = (req: express.Request, res: express.Response): void => {
 	const filter = {
-		userId: parseInt(req.query.userId),
-		cityId: parseInt(req.query.cityId),
+		userId: parseInt(req.query.userId.toString()),
+		cityId: parseInt(req.query.cityId.toString()),
 		startTime: {
-			$gte: parseFloat(req.query.from),
-			$lte: parseFloat(req.query.to)
+			$gte: parseFloat(req.query.from.toString()),
+			$lte: parseFloat(req.query.to.toString())
 		}
 	};
+	const offset = parseInt(req.query.offset.toString());
+	const limit = parseInt(req.query.pages.toString());
 	const fields: string = 'cityId startTime ranges';
-	const offset = parseInt(req.query.offset);
-	const limit = parseInt(req.query.pages);
 	fetchTracks(filter, fields, offset, limit)
 	.then((result: any[]) => {
 		res.send(result);

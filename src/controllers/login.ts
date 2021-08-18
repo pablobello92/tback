@@ -1,10 +1,10 @@
 export {};
-
+import express from 'express';
 import {
     getUser
 } from './users';
 
-export const loginCallBack = (req: any, res: any): void => {
+export const loginCallBack = (req: express.Request, res: express.Response): void => {
     const filter: any = {
         username: req.body.username,
         password: req.body.password

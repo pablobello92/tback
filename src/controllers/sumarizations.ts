@@ -1,4 +1,5 @@
 export {};
+import express from 'express';
 
 import Sumarization from '../models/sumarization';
 
@@ -23,7 +24,7 @@ import {
 //? Para c/ciudad traigo las reparaciones y repito el proceso...
 //? AL FINAL LO DE DESCARTAR SEGMENTOS REPARADOS NO LO VOY A IMPLEMENTAR...
 
-export const sumarizeTracksCallback = (req: any, res: any): void => {
+export const sumarizeTracksCallback = (req: express.Request, res: express.Response): void => {
     getTracksMapByCity('cityId startTime ranges')
     .pipe(
             map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
@@ -57,7 +58,7 @@ const replaceSumarizations = (values: any): Observable<Error | any> => {
     );
 }
 
-export const getSumarizationsCallback = (req: any, res: any): void => {
+export const getSumarizationsCallback = (req: express.Request, res: express.Response): void => {
     const filter = {
         cityId: req.query.cityId
     };
