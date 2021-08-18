@@ -145,25 +145,21 @@ const predictSample = async (sample: any) => {
     }
 }
 
-const removePredictions = (): Promise<Error | any> => {
-    return PredictedRoadTypes.deleteMany({})
+const removePredictions = (): Promise<Error | any> =>
+    PredictedRoadTypes.deleteMany({})
         .then((result: any) => result)
         .catch((error: any) => new Error(error));
-}
 
-const insertPredictions = (values: any): Promise<Error | any> => {
-    return PredictedRoadTypes.insertMany(values)
+const insertPredictions = (values: any): Promise<Error | any> =>
+    PredictedRoadTypes.insertMany(values)
         .then((result: any) => result)
         .catch((error: any) => new Error(error));
-}
 
-const replacePredictions = (values: any): Observable<Error | any> => {
-    return from(removePredictions())
+const replacePredictions = (values: any): Observable<Error | any> =>
+    from(removePredictions())
     .pipe(
         switchMap((res: any) => insertPredictions(values))
     );
-}
-
 
 /**
  * ?------------------
