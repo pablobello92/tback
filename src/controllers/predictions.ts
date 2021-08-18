@@ -24,8 +24,10 @@ import {
     Observable
 } from 'rxjs';
 import {
+    IAccelerometer,
     ISumarizedObject,
-    ISumarizingObject
+    ISumarizingObject,
+    TensorSample
 } from '../interfaces/Track';
 import {
     tensorSample
@@ -90,10 +92,6 @@ class PredictionTypes {
     public getAnomalyType(id: number): PredictionType {
         return this.anomalyTypes.find((item: PredictionType) => item.id === id);
     }
-
-    public getSample(x: number, y: number, z: number, xdiff: number, ydiff: number, zdiff: number): number[][] {
-        return [[x], [y], [z], [xdiff], [ydiff], [zdiff]];
-    }
 }
 
 export const predictRoadsCallback = (req: express.Request, res: express.Response): void => {
@@ -147,12 +145,10 @@ const predictSample = async (sample: any) => {
 
 const removePredictions = (): Promise<Error | any> =>
     PredictedRoadTypes.deleteMany({})
-        .then((result: any) => result)
         .catch((error: any) => new Error(error));
 
 const insertPredictions = (values: any): Promise<Error | any> =>
     PredictedRoadTypes.insertMany(values)
-        .then((result: any) => result)
         .catch((error: any) => new Error(error));
 
 const replacePredictions = (values: any): Observable<Error | any> =>
@@ -160,6 +156,16 @@ const replacePredictions = (values: any): Observable<Error | any> =>
     .pipe(
         switchMap((res: any) => insertPredictions(values))
     );
+
+export const getTensorSample = (a: IAccelerometer): TensorSample =>
+    [
+        [a.x.raw],
+        [a.y.raw],
+        [a.z.raw],
+        [a.x.diff],
+        [a.y.diff],
+        [a.z.diff]
+    ];
 
 /**
  * ?------------------

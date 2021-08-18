@@ -29,6 +29,9 @@ import {
 	IRange,
 	IPredictionSegment
 } from '../interfaces/Track';
+import { 
+	getTensorSample
+} from './predictions';
 
 export const getTracksCallback = (req: express.Request, res: express.Response): void => {
 	const filter = {
@@ -228,7 +231,7 @@ const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegmen
 		date: matching.date,
 		score: matching.score,
 		distance: matching.distance,
-		acceleromenters: [...toAdd.acceleromenters, ...matching.acceleromenters]
+		samples: [...toAdd.samples, ...matching.samples]
 	};
 
 const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
@@ -241,9 +244,11 @@ const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[])
 	return <IPredictionSegment> {
 		...relevantFields,
 		id: [range.id],
-		acceleromenters: getAccelerometers(range.id, accelerometers)
+		samples: getSamples(range.id, accelerometers)
 	};
 }
 
-const getAccelerometers = (id: number, accelerometers: IAccelerometer[]): IAccelerometer[] =>
-	accelerometers.filter((a: IAccelerometer) => a.id === id);
+const getSamples = (id: number, accelerometers: IAccelerometer[]): number[][][] =>
+	accelerometers
+		.filter((a: IAccelerometer) => a.id === id)
+		.map((a: IAccelerometer) => getTensorSample(a));

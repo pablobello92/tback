@@ -1,7 +1,7 @@
 interface Axis {
-    raw: Number;
-    delta: Number;
-    diff: Number;
+    raw: number;
+    delta: number;
+    diff: number;
 }
 
 interface StabilityEvent {
@@ -41,9 +41,11 @@ export interface ISumarizationSegment extends ISegment {
     accuracy? : number;
 }
 
+export type TensorSample = number[][];
+
 export interface IPredictionSegment extends ISegment {
     id: number[];
-    acceleromenters : IAccelerometer[];
+    samples : TensorSample[];
 }
 
 export interface ITrack {
