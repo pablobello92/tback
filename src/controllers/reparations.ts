@@ -1,25 +1,32 @@
 export {};
+import express from 'express';
 import Reparation from './../models/reparation';
 
-export const getReparationsCallback = (req, res): void => {
+export const getReparationsCallback = (req: express.Request, res: express.Response): void => {
     const filter = {
-        city: req.query.city
+        cityId: parseInt(req.query.cityId.toString())
     };
     Reparation.find(filter)
-    .then(reparations => {
-        res.send(reparations);
-    })
-    .catch(err => {
-        console.error(err);
-    });
+        .then((result: any) => {
+            res.send(result)
+        })
+        .catch((error: any) => {
+            res.send(new Error(error));
+        })
+        .finally(() => {
+            res.end();
+        });
 };
 
-export const putReparationCallback = (req, res): void => {
+export const putReparationCallback = (req: express.Request, res: express.Response): void => {
     Reparation.insertMany([req.body])
-    .then(response => {
-        res.send(response)
-    })
-    .catch(error => {
-        res.send(error);
-    });
+        .then((result: any) => {
+            res.send(result)
+        })
+        .catch((error: any) => {
+            res.send(new Error(error));
+        })
+        .finally(() => {
+            res.end();
+        });
 };

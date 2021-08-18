@@ -1,11 +1,7 @@
 export {};
-import {
-    Observable
-} from 'rxjs';
-import { of } from 'rxjs/internal/observable/of';
 
 export const sumarizingObjects: any[] = [{
-    'city': 'Tandil',
+    'cityId': 2,
     'tracks': [{
             'startTime': 1520543837027,
             'ranges': [{
@@ -25885,7 +25881,7 @@ export const sumarizingObjects: any[] = [{
     ]
 },
 {
-    'city': 'Azul',
+    'cityId': 0,
     'tracks': [{
             'startTime': 1520532778063,
             'ranges': [{
@@ -37830,12 +37826,12 @@ export const sumarizingObjects: any[] = [{
     ]
 },
 {
-    'city': 'Mar Del Plata',
+    'cityId': 1,
     'tracks': [
     ]
 }];
 
-export const sample: any[] = [[
+export const tensorSample: any[] = [[
     [[-0.9959879 ],
     [-0.15322888],
     [ 0.51714754],
