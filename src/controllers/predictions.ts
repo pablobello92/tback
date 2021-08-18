@@ -164,15 +164,32 @@ const replacePredictions = (values: any): Observable<Error | any> =>
         switchMap((res: any) => insertPredictions(values))
     );
 
-export const getTensorSample = (a: IAccelerometer): TensorSample =>
-    [
+export const getTensorSample = (a?: IAccelerometer): TensorSample =>
+    a ? [
         [a.x.raw],
         [a.y.raw],
         [a.z.raw],
         [a.x.diff],
         [a.y.diff],
         [a.z.diff]
+    ] : 
+    [
+        [0],
+        [0],
+        [0],
+        [0],
+        [0],
+        [0]
     ];
+
+export const addEmptySamples(original: TensorSample[], n: number): TensorSample[] => {
+    const copy: TensorSample[] = [...original];
+    const remainder = original.length % n;
+    for (let i = 0; i < remainder; i++) {
+        copy.push(getTensorSample(null));
+    }
+    return copy;
+}
 
 /**
  * ?------------------
