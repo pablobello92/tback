@@ -1,6 +1,34 @@
-import {
-    ISegment
-} from "./Segment";
+
+interface Coordinate {
+    lat: number;
+    lng: number;
+}
+interface IBaseSegment {
+    start: Coordinate;
+    end: Coordinate;
+}
+
+export interface ISegment extends IBaseSegment {
+    date: number;
+    score: number;
+    distance: number;
+}
+
+export interface ISumarizationSegment extends ISegment {
+    accuracy? : number;
+}
+
+export interface ISumarizingObject {
+    cityId: number;
+    date ? : number;
+    tracks: ITrack[];
+}
+
+export interface ISumarizedObject {
+    cityId: number;
+    date: number;
+    ranges: ISegment[] | ISumarizationSegment[];
+}
 
 export interface Axis {
     raw: Number;
@@ -8,7 +36,7 @@ export interface Axis {
     diff: Number;
 }
 
-export interface Accelerometer {
+export interface IAccelerometer {
     id: Number;
     eventId: Number;
     currentTime: Number;
@@ -39,5 +67,5 @@ export interface ITrack {
     startTime: number;
     city: String;
     ranges: IRange[];
-    accelerometers ? : Accelerometer[];
+    accelerometers ? : IAccelerometer[];
 }
