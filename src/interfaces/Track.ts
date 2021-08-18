@@ -20,7 +20,7 @@ interface Coordinate {
     lng: number;
 }
 
-interface IBaseSegment {
+export interface IBaseSegment {
     start: Coordinate;
     end: Coordinate;
 }
@@ -32,12 +32,18 @@ export interface ISegment extends IBaseSegment {
 }
 
 export interface IRange extends ISegment {
+    id: number;
     speed: number;
     stabilityEvents: StabilityEvent[];
 }
 
 export interface ISumarizationSegment extends ISegment {
     accuracy? : number;
+}
+
+export interface IPredictionSegment extends ISegment {
+    id: number[];
+    acceleromenters : IAccelerometer[];
 }
 
 export interface ITrack {
@@ -48,15 +54,16 @@ export interface ITrack {
     accelerometers ? : IAccelerometer[];
 }
 
-export interface ISumarizingObject {
+interface IBaseCityGroupObject {
     cityId: number;
-    date ? : number;
+    date? : number;
+}
+
+export interface ISumarizingObject extends IBaseCityGroupObject {
     tracks: ITrack[];
 }
 
-export interface ISumarizedObject {
-    cityId: number;
-    date: number;
+export interface ISumarizedObject extends IBaseCityGroupObject {
     ranges: ISegment[] | ISumarizationSegment[];
 }
 

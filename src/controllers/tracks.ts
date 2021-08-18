@@ -17,14 +17,14 @@ import {
 	mergeMap
 } from 'rxjs/operators';
 import {
-	ISegment,
+	IAccelerometer,
+	IBaseSegment,
 	ISumarizationSegment,
 	ISumarizedObject,
-	ISumarizingObject
-} from '../interfaces/Segment';
-import {
+	ISumarizingObject,
 	ITrack,
-	IRange
+	IRange,
+	IPredictionSegment
 } from '../interfaces/Track';
 
 import Track from './../models/track';
@@ -88,10 +88,10 @@ const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: numbe
 		.catch((error: any) => new Error(error));
 }
 
-const findMatchingSegment = (mySegment: ISumarizationSegment, array: ISumarizationSegment[]): number =>
-	array.findIndex((s: ISumarizationSegment) => matches(mySegment, s));
+const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
+	array.findIndex((s: IBaseSegment) => matches(mySegment, s));
 
-const matches = (a: ISumarizationSegment, b: ISumarizationSegment): boolean => {
+const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
 	const center: any = getCenter([a.start, a.end]);
 	const length: number = getDistance(b.start, b.end);
 	const distanceToStart: number = getDistance(b.start, center);
@@ -184,55 +184,65 @@ const getMergedSumarizingSegment = (toAdd: ISumarizationSegment, matching: ISuma
  */
 
 export const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
-	items.map((item: ISumarizingObject) => sampleTracks(item));
+	items.map((item: ISumarizingObject) =>
+		<ISumarizedObject> {
+			cityId: item.cityId,
+			ranges: sampleTracks(item)
+		}
+	);
 
-const sampleTracks = (item: ISumarizingObject): ISumarizedObject => {
-	const date = Date.parse(new Date().toDateString());
-	const sumarizedSegments: ISumarizationSegment[] = [];
+const sampleTracks = (item: ISumarizingObject): ISumarizationSegment[] => {
+	const result: IPredictionSegment[] = [];
+
+	let ranges: IRange[] = [];
+	let accelerometers: IAccelerometer[] = [];
+	let segments: IPredictionSegment[] = [];
 
 	item.tracks.forEach((track: ITrack) => {
-		sampleNextTrack(sumarizedSegments, track);
+		ranges.push(...track.ranges);
+		accelerometers.push(...track.accelerometers);
 	});
 
-	return <ISumarizedObject> {
-		cityId: item.cityId,
-		date,
-		ranges: sumarizedSegments
+	segments = ranges.map((r: IRange) => mapToPredictionSegment(r, accelerometers));
+
+	segments.forEach((s: IPredictionSegment) => {
+		const index = findMatchingSegment(s, result);
+		if (index === -1) {
+			result.push(s);
+		} else {
+			const matching = result.splice(index, 1)[0];
+			const merged = getMergedSegment(s, matching);
+			result.push(merged);
+		}
+	});
+
+	return result;
+}
+
+const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment =>
+	<IPredictionSegment> {
+		id: [...toAdd.id, ...matching.id],
+		start: matching.start,
+		end: matching.end,
+		date: matching.date,
+		score: matching.score,
+		distance: matching.distance,
+		acceleromenters: [...toAdd.acceleromenters, ...matching.acceleromenters]
 	};
-}
 
-const sampleNextTrack = (array: ISumarizationSegment[], track: ITrack): void => {
-	let ranges: IRange[] = track.ranges;
-	let segments: ISegment[] = [];
-
-	segments = ranges.map((r: IRange) => mapRangeToSegment(r));
-
-	segments.forEach((s: ISumarizationSegment) => {
-		const toPush = addSegment(s, array);
-		array.push(toPush);
-	});
-}
-
-const mapRangeToSegment = (range: IRange): ISegment => {
+const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
 	const {
 		speed,
 		stabilityEvents,
+		id,
 		...relevantFields
 	} = range;
-	return <ISegment> {
-		...relevantFields
+	return <IPredictionSegment> {
+		...relevantFields,
+		id: [range.id],
+		acceleromenters: getAccelerometers(range.id, accelerometers)
 	};
 }
 
-const addSegment = (toAdd: ISumarizationSegment, array: ISumarizationSegment[]): ISegment => {
-	const index = findMatchingSegment(toAdd, array);
-	if (index === -1) {
-		return toAdd;
-	} else {
-		const matching = array.splice(index, 1)[0];
-		const merged = getMergedSegment(toAdd, matching);
-		return merged;
-	}
-}
-
-const getMergedSegment = (toAdd: ISumarizationSegment, matching: ISumarizationSegment): ISegment => matching;
+const getAccelerometers = (id: number, accelerometers: IAccelerometer[]): IAccelerometer[] =>
+	accelerometers.filter((a: IAccelerometer) => a.id === id);
