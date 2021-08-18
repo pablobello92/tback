@@ -22,7 +22,7 @@ import {
 import {
     ISumarizedObject,
     ISumarizingObject
-} from '../interfaces/Segment';
+} from '../interfaces/Track';
 import {
     tensorSample
 } from './mocks';

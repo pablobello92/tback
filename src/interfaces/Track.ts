@@ -1,8 +1,25 @@
+interface Axis {
+    raw: Number;
+    delta: Number;
+    diff: Number;
+}
+
+interface StabilityEvent {
+    id: number;
+    startTime: number;
+    endTime: number;
+    xavg: number;
+    yavg: number;
+    zavg: number;
+    score: number;
+    duration: number;
+}
 
 interface Coordinate {
     lat: number;
     lng: number;
 }
+
 interface IBaseSegment {
     start: Coordinate;
     end: Coordinate;
@@ -14,8 +31,21 @@ export interface ISegment extends IBaseSegment {
     distance: number;
 }
 
+export interface IRange extends ISegment {
+    speed: number;
+    stabilityEvents: StabilityEvent[];
+}
+
 export interface ISumarizationSegment extends ISegment {
     accuracy? : number;
+}
+
+export interface ITrack {
+    id: number;
+    startTime: number;
+    city: String;
+    ranges: IRange[];
+    accelerometers ? : IAccelerometer[];
 }
 
 export interface ISumarizingObject {
@@ -30,12 +60,6 @@ export interface ISumarizedObject {
     ranges: ISegment[] | ISumarizationSegment[];
 }
 
-export interface Axis {
-    raw: Number;
-    delta: Number;
-    diff: Number;
-}
-
 export interface IAccelerometer {
     id: Number;
     eventId: Number;
@@ -44,28 +68,4 @@ export interface IAccelerometer {
     y: Axis;
     z: Axis;
     axis: String;
-}
-
-interface StabilityEvent {
-    id: number;
-    startTime: number;
-    endTime: number;
-    xavg: number;
-    yavg: number;
-    zavg: number;
-    score: number;
-    duration: number;
-}
-
-export interface IRange extends ISegment {
-    speed: number;
-    stabilityEvents: StabilityEvent[];
-}
-
-export interface ITrack {
-    id: number;
-    startTime: number;
-    city: String;
-    ranges: IRange[];
-    accelerometers ? : IAccelerometer[];
 }
