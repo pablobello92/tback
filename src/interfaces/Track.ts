@@ -66,7 +66,7 @@ export interface ISumarizingObject extends IBaseCityGroupObject {
 }
 
 export interface ISumarizedObject extends IBaseCityGroupObject {
-    ranges: ISegment[] | ISumarizationSegment[];
+    ranges: ISegment[];
 }
 
 export interface IAccelerometer {

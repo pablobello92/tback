@@ -8,7 +8,8 @@ import {
     tensor4d,
     Tensor,
     loadLayersModel,
-    Rank
+    Rank,
+    LayersModel
 } from '@tensorflow/tfjs-node';
 import {
     getTracksMapByCity,
@@ -21,7 +22,8 @@ import {
 } from 'rxjs/operators';
 import { 
     from,
-    Observable
+    Observable,
+    of
 } from 'rxjs';
 import {
     IAccelerometer,
@@ -38,7 +40,13 @@ interface PredictionType {
     description: string;
 };
 
+enum modelPaths  {
+    roads ='file://src/assets/tensorFlowCore/roads/model.json',
+    anomalies = 'file://src/assets/tensorFlowCore/anomalies/model.json',
+};
+
 class PredictionTypes {
+
     private roadTypes: PredictionType[] = [
         {
             id: 0,
@@ -106,6 +114,11 @@ export const predictRoadsCallback = (req: express.Request, res: express.Response
     getTracksMapByCity('cityId startTime ranges accelerometers')
         .pipe(
             map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
+            switchMap((predictions: ISumarizedObject[]) => {
+                predictions.map((p: ISumarizedObject) => {
+                });
+                return of(predictions)
+            }),
             switchMap((predictions: ISumarizedObject[]) => replacePredictions(predictions))
         )
         .subscribe((result: any) => {
@@ -126,17 +139,16 @@ export const predictRoadsCallback = (req: express.Request, res: express.Response
     }); */
 }
 
-const predictSample = async (sample: any) => {
-    try {
-        const tensor: Tensor4D = tensor4d(sample);
-        const loadedModel = await loadLayersModel('file://src/assets/tensorFlowCore/roads/model.json');
-        // Predict() retorna un numero que identifica al tipo de muestra segun orden alfabetico:
-        const result: Tensor < Rank > = loadedModel.predict(tensor) as Tensor;
-        return result.dataSync();
-    } catch (err) {
-        throw new Error(err);
-    }
+const predictSample = (model: LayersModel, sample: any): any => {
+    const tensor: Tensor4D = tensor4d(sample);
+    const result: Tensor<Rank> = model.predict(tensor) as Tensor;
+    return result.dataSync();
 }
+
+//? The model is loaded only once for the entire prediction
+const loadModel = (path: string): Promise<LayersModel | Error> =>
+    loadLayersModel(path)
+    .catch((error: any) => new Error(error))
 
 const removePredictions = (): Promise<Error | any> =>
     PredictedRoadTypes.deleteMany({})
