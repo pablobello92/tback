@@ -5,13 +5,12 @@ import {
     model
 } from 'mongoose';
 
-const sumarizationSchema = new Schema({
+
+const predictedRoadTypesSchema = new Schema({
     _id: Schema.Types.ObjectId,
     cityId: Number,
     date: Number,
     ranges: [{
-        // TODO: Por lo visto tengo que sacar este campo date
-        date: Number,
         start: {
             lat: Number,
             lng: Number
@@ -20,12 +19,14 @@ const sumarizationSchema = new Schema({
             lat: Number,
             lng: Number
         },
+        date: Number,
         score: Number,
         distance: Number,
-        accuracy: Number
-    }],
+        id: [Number],
+        samples: [[[Number]]]
+    }]
 });
 
-const Sumarization = model('Sumarizations', sumarizationSchema, 'sumarizations');
+const PredictedRoadTypes = model('PredictedRoadTypes', predictedRoadTypesSchema, 'predictedRoadTypes');
 
-export default Sumarization;
+export default PredictedRoadTypes;

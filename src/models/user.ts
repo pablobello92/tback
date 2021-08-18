@@ -1,12 +1,20 @@
 export {};
 
-import { Schema, model } from 'mongoose';
+import {
+    Schema,
+    model
+} from 'mongoose';
 
 const userSchema = new Schema({
     _id: Schema.Types.ObjectId,
+    id: Number,
+    level: Number,
+    linkedCities: [{
+        id: Number
+    }],
     username: String,
-    nickname: String,
     password: String,
+    nickname: String,
     email: String,
     sex: String,
     yearofbirth: Number,

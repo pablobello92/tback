@@ -1,15 +1,15 @@
 export {};
 
-import { Schema, model } from 'mongoose';
+import {
+    Schema,
+    model
+} from 'mongoose';
 
 const trackSchema = new Schema({
     _id: Schema.Types.ObjectId,
     startTime: Number,
-    user: {
-        type: Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    city: String,
+    cityId: Number,
+    userId: Number,
     ranges: [{
         id: Number,
         date: Number,

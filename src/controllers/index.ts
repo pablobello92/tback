@@ -1,6 +1,7 @@
 export {};
+import express from 'express';
 
-export const addHeadersCallback = (req, res, next): void => {
+export const addHeadersCallback = (req: express.Request, res: express.Response, next: express.NextFunction): void => {
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:4200');
     // Request methods you wish to allow
@@ -9,7 +10,7 @@ export const addHeadersCallback = (req, res, next): void => {
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
     // Set to true if you need the website to include cookies in the requests sent
     // to the API (e.g. in case you use sessions)
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     // Pass to next layer of middleware
     next();
 };
@@ -20,10 +21,10 @@ export const listenCallback = (): void => {
     console.log('--------------------------------');
 };
 
-export const indexCallback = (req, res): void => {
+export const indexCallback = (req: express.Request, res: express.Response): void => {
     res.end();
 };
 
-export const notFoundCallback = (req, res): void => {
-    res.end('Route not found!');
+export const notFoundCallback = (req: express.Request, res: express.Response): void => {
+    res.end(new Error('Route not found'));
 };

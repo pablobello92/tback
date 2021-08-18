@@ -21,8 +21,8 @@ api.get('/api/sumarizations', sumarizeTracksCallback);
 api.get('/api/sumarizations/get', getSumarizationsCallback);
 api.get('/api/reparations', getReparationsCallback);
 api.put('/api/reparations/insert', putReparationCallback);
-api.get('/api/predictions/roadTypes', predictRoadsCallback);
-api.get('/api/predictions/anomalies', predictAnomaliesCallback);
+api.post('/api/predictions/roadTypes', predictRoadsCallback);
+api.post('/api/predictions/anomalies', predictAnomaliesCallback);
 api.get('*', notFoundCallback);
 
 export default api;

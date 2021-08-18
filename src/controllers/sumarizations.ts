@@ -1,221 +1,79 @@
 export {};
-import {
-    getCenter,
-    getDistance
-} from 'geolib';
+import express from 'express';
 
-import City from '../models/city';
 import Sumarization from '../models/sumarization';
-import Track from '../models/track';
 
 import {
-    IRange,
-    ITrack,
-    SumarizingObject,
-    SumarizingSegment
-} from '../interfaces/Sumarizations';
-
-import {
+    map,
+    switchMap
+} from 'rxjs/operators';
+import { 
+    from,
     Observable
 } from 'rxjs';
 import {
-    of
-} from 'rxjs/internal/observable/of';
+    getTracksMapByCity,
+    sumarizeTracksByCity
+} from './tracks';
 import {
-    map
-} from 'rxjs/operators';
-import {
-    sumarizingObjects
-} from './mocks';
+    ISumarizingObject,
+    ISumarizedObject,
+} from '../interfaces/Track';
 
-export const sumarizeTracksCallback = (req, res): void => {
-    of(sumarizingObjects)
+//? Aca debe ir la funcion para descartar...
+//? Para c/ciudad traigo las reparaciones y repito el proceso...
+//? AL FINAL LO DE DESCARTAR SEGMENTOS REPARADOS NO LO VOY A IMPLEMENTAR...
+
+export const sumarizeTracksCallback = (req: express.Request, res: express.Response): void => {
+    getTracksMapByCity('cityId startTime ranges')
     .pipe(
-        map((mock: SumarizingObject[]) => mock.map((item: SumarizingObject) => sumarizeByCity(item)))
-    )
-    .subscribe(result => {
-        console.log(result);
-        Sumarization.deleteMany({})
-        .then(deletion => {
-            Sumarization.insertMany(result)
-            .then(result => {   
-                res.send(result);   
-            })
-            .catch(error => {
-                throw error;
-            });
-        })
-        .catch(error => {
-            throw error;
-        });    
-    }, err => {
-        console.error(err);
-        throw err;
-    });
-}
-
-//!OJO! usar este!
-//TODO: pass the data as parameter, it's not a get callback anymore
-const putSumarizationsCallback = (req, res): void => {
-    Sumarization.deleteMany({})
-        .then(response => {
-            Sumarization.insertMany(req.body)
-                .then(insertResponse => {
-                    res.send(insertResponse);
-                })
-                .catch(err => {
-                    res.send(err);
-                });
-        })
-        .catch(error => {
+            map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
+            switchMap((sumarizations: ISumarizedObject[]) => replaceSumarizations(sumarizations))
+        )
+        .subscribe((result: any) => {
+            res.send(result);
+            res.end();
+        }, (error: Error) => {
             res.send(error);
             res.end();
         });
 }
 
-/*const getTracksMapped = (): Observable<SumarizingObject[]> => {
-    return getCityNames()
-    .then((cityNames: string[]) => {
-        let result = [];
-        cityNames.forEach(cityName => {
-            result.push(getTracksByCity(cityName))
-        });
-        return Promise.all(result)
-        .then(tracks => {
-            const objects = tracks.map((tracks, index) => {
-                return {
-                    city: cityNames[index],
-                    tracks
-                };
-            });
-            return objects;
-        })
-        .then(objects => {
-            return objects;
-        })
-        .catch(error => {
-            throw error;
-        });
-    })
-    .catch(error => {
-        throw error;
-    });
-}*/
-
-const sumarizeByCity = (item: SumarizingObject): any => {
-    const ranges: SumarizingSegment[] = [];
-    const tracks = item.tracks;
-    tracks.forEach((track: ITrack) => {
-        addSumarizedSegmentsByTrack(ranges, track);
-    });
-    return {
-        city: item.city,
-        date: Date.parse(new Date().toDateString()),
-        ranges
-    };
+const removeSumarizations = (): Promise<Error | any> => {
+    return Sumarization.deleteMany({})
+        .then((result: any) => result)
+        .catch((error: any) => new Error(error));
 }
 
-const addSumarizedSegmentsByTrack = (temp: SumarizingSegment[], track: ITrack): any => {
-    const startTime = track.startTime;
-    const segments: SumarizingSegment[] = track.ranges.map((item: IRange) => mapRangeToSumarizingRange(item));
-    segments.forEach((segment: SumarizingSegment) => {
-        addRangeToResult(segment, temp);
-    });
+const insertSumarizations = (values: any): Promise<Error | any> => {
+    return Sumarization.insertMany(values)
+        .then((result: any) => result)
+        .catch((error: any) => new Error(error));
 }
 
-// add Coordinate = { lat/lng } type to elements
-const addRangeToResult = (rangeToMerge: SumarizingSegment, subTemp: SumarizingSegment[]): any => {
-    const midpoint = getCenter([rangeToMerge.start, rangeToMerge.end]);
-    const toMerge = subTemp.find((range: SumarizingSegment) => shouldMerge(midpoint, range));
-    if (!toMerge) {
-        rangeToMerge.accuracy = 1;
-        subTemp.push(rangeToMerge);
-    } else {
-        mergeRanges(toMerge, rangeToMerge);
-    }
+const replaceSumarizations = (values: any): Observable<Error | any> => {
+    return from(removeSumarizations())
+    .pipe(
+        switchMap((res: any) => insertSumarizations(values))
+    );
 }
 
-const shouldMerge = (point: any, range: any): boolean => {
-    const distance = getDistance(range.start, range.end);
-    const distanceToStart = getDistance(range.start, point);
-    const distanceToEnd = getDistance(range.end, point);
-    return distanceToStart < distance && distanceToEnd < distance;
-}
-
-const mergeRanges = (oldRange: SumarizingSegment, newRange: SumarizingSegment): void => {
-    const NEW_DATA_WEIGHT = 0.6;
-    const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
-    oldRange.score = oldRange.score * OLD_DATA_WEIGHT + newRange.score * NEW_DATA_WEIGHT;
-    oldRange.date = newRange.date;
-    oldRange.accuracy++;
-}
-
-const mapRangeToSumarizingRange = (range: IRange): SumarizingSegment => {
-    const {
-        speed,
-        stabilityEvents,
-        ...relevantFields
-    } = range;
-    return <SumarizingSegment > {
-        ...relevantFields,
-        accuracy: 0
-    };
-}
-
-const getSumarizationsByFilter = async (filter: {}) => {
-    try {
-        const sumarizations: any[] = await Sumarization.find(filter)
-        if (!sumarizations) {
-            return [];
-        }
-        return sumarizations;
-    } catch (error) {
-        throw new Error("Error getting the Sumarizations");
-    }
-}
-
-export const getSumarizationsCallback = (req, res): void => {
+export const getSumarizationsCallback = (req: express.Request, res: express.Response): void => {
     const filter = {
-        city: req.query.city
+        cityId: req.query.cityId
     };
     getSumarizationsByFilter(filter)
-        .then(result => {
+        .then((result: any) => {
             res.send(result);
         })
-        .catch(err => {
-            console.error(err);
-            res.send(err);
+        .catch((error: Error) => {
+            res.send(error);
+        })
+        .finally(() => {
+            res.end();
         });
 }
 
-const getCityNames = async () => {
-    try {
-        const cities = < any > await City.find();
-        if (!cities) {
-            return [];
-        }
-        return cities.map(city => city.name);
-    } catch (error) {
-        throw new Error("error getting the cities");
-    }
-}
-
-const getTracksByCity = async (cityName: string) => {
-    try {
-        const tracks: any[] = await Track.find({
-            city: cityName
-        }).limit(5)
-        if (!tracks) {
-            return [];
-        }
-        const result = tracks.map(track => {
-            return {
-                startTime: track.startTime,
-                ranges: track.ranges
-            };
-        });
-        return result;
-    } catch (error) {
-        throw new Error("error getting the cities");
-    }
-}
+const getSumarizationsByFilter = (filter: {}): Promise<Error | any> =>
+    Sumarization.find(filter).lean()
+        .catch((error: any) => new Error(error));
