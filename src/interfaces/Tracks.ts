@@ -41,13 +41,6 @@ export interface ISumarizationSegment extends ISegment {
     accuracy? : number;
 }
 
-export type TensorSample = number[][];
-
-export interface IPredictionSegment extends ISegment {
-    id: number[];
-    samples : TensorSample[];
-}
-
 export interface ITrack {
     id: number;
     startTime: number;

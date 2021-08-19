@@ -31,13 +31,16 @@ import {
 import {
     IAccelerometer,
     IBaseSegment,
-    IPredictionSegment,
     IRange,
+    ISegment,
     ISumarizedObject,
     ISumarizingObject,
-    ITrack,
+    ITrack
+} from '../interfaces/Tracks';
+import { 
+    IPredictionSegment,
     TensorSample
-} from '../interfaces/Track';
+} from '../interfaces/Predictions';
 import { 
     PATHS,
     TENSOR_SAMPLE_SIZE
@@ -56,7 +59,7 @@ export const predictRoadsCallback = (req: express.Request, res: express.Response
         .pipe(
             map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
             switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData)),
-            //switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity))
+            switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity))
         )
         .subscribe((result: any) => {
             res.status(200).send(result);
@@ -71,8 +74,17 @@ const predictSamplesByCity = (items: ISumarizedObject[]): Observable<ISumarizedO
     from(loadModel(PATHS.ROADS))
     .pipe(
         map((model: LayersModel) => items.map((item: ISumarizedObject) => {
-            item.ranges.forEach((r: IPredictionSegment) => {
-                r.score = calculateScore(r.samples, model);
+            item.ranges.map((r: IPredictionSegment) => {
+                const newScore = calculateScore(r.samples, model);
+                const {
+                    samples,
+                    score,
+                    ...relevantFields
+                } = r;
+                return <ISegment> {
+                    ...relevantFields,
+                    score: newScore
+                };
             });
             return item;
         }))
@@ -84,19 +96,42 @@ const loadModel = (path: string): Promise<LayersModel | Error> =>
 
 const calculateScore = (samples: TensorSample[], model: LayersModel): number => {
     const WINDOWS = (samples.length / TENSOR_SAMPLE_SIZE);
+    let scores: number[] = [];
     for (let i = 0; i < WINDOWS; i++) {
         let temp = samples.slice(i * TENSOR_SAMPLE_SIZE, (i * TENSOR_SAMPLE_SIZE) + TENSOR_SAMPLE_SIZE);
-        const scores = predictSample([temp] as number[][][][], model);
-        console.log(scores);
+        const predictionResult = predictSample([temp] as number[][][][], model);
+        const score = getPredominantType(predictionResult);
+        scores.push(score);
     }
-    // retornar el que mas se repite??
-    return 99;
+    return getCommon(scores);
 }
 
 const predictSample = (sample: any, model: LayersModel): any => {
     const tensor: Tensor4D = tensor4d(sample);
     const result: Tensor<Rank> = model.predict(tensor) as Tensor;
     return result.dataSync();
+}
+
+const getPredominantType = (array: Float32Array): number => {
+    return array.indexOf(Math.max(...array));
+}
+
+const getCommon = (items: number[]): number => {
+    let count = 0;
+    let higherCount = 1;
+    let result: number;
+    for (let i = 0; i < items.length; i++) {
+        for (let j = i; j < items.length; j++) {
+            if (items[i] == items[j])
+                count++;
+                if (higherCount < count) {
+                    higherCount = count; 
+                    result = items[i];
+                }
+        }
+        count = 0;
+    }
+    return result;
 }
 
 const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
@@ -189,10 +224,10 @@ const insertPredictions = (values: any): Promise<Error | any> =>
 export const getTensorSample = (a?: IAccelerometer): TensorSample =>
     (a !== null) ? [
         [a.x.raw],
-        [a.y.raw],
-        [a.z.raw],
         [a.x.diff],
+        [a.y.raw],
         [a.y.diff],
+        [a.z.raw],
         [a.z.diff]
     ] : 
     [

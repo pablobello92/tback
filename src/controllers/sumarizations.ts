@@ -18,7 +18,7 @@ import {
 import {
     ISumarizingObject,
     ISumarizedObject,
-} from '../interfaces/Track';
+} from '../interfaces/Tracks';
 
 //? Aca debe ir la funcion para descartar...
 //? Para c/ciudad traigo las reparaciones y repito el proceso...

@@ -27,7 +27,7 @@ import {
 	ISumarizingObject,
 	ITrack,
 	IRange
-} from '../interfaces/Track';
+} from '../interfaces/Tracks';
 
 export const getTracksCallback = (req: express.Request, res: express.Response): void => {
 	const filter = {
