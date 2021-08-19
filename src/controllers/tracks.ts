@@ -26,12 +26,8 @@ import {
 	ISumarizedObject,
 	ISumarizingObject,
 	ITrack,
-	IRange,
-	IPredictionSegment
+	IRange
 } from '../interfaces/Track';
-import { 
-	getTensorSample
-} from './predictions';
 
 export const getTracksCallback = (req: express.Request, res: express.Response): void => {
 	const filter = {
@@ -90,20 +86,6 @@ const getTracksMappingByCity = (cityId: number, fields: string, skip: number, li
 const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<Error | any[]> => {
 	return Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec()
 		.catch((error: any) => new Error(error));
-}
-
-const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
-	array.findIndex((s: IBaseSegment) => matches(mySegment, s));
-
-const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
-	const center: any = getCenter([a.start, a.end]);
-	const length: number = getDistance(b.start, b.end);
-	const distanceToStart: number = getDistance(b.start, center);
-	const distanceToEnd: number = getDistance(b.end, center);
-	return (
-		distanceToStart < length &&
-		distanceToEnd < length
-	);
 }
 
 /**
@@ -165,6 +147,20 @@ const addSumarizingSegment = (toAdd: ISumarizationSegment, array: ISumarizationS
 	}
 }
 
+const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
+    array.findIndex((s: IBaseSegment) => matches(mySegment, s));
+
+const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
+    const center: any = getCenter([a.start, a.end]);
+    const length: number = getDistance(b.start, b.end);
+    const distanceToStart: number = getDistance(b.start, center);
+    const distanceToEnd: number = getDistance(b.end, center);
+    return (
+        distanceToStart < length &&
+        distanceToEnd < length
+    );
+}
+
 // TODO: Refactorizar esto... deberia ir en un archivo aparte de configuracion o de constantes
 // TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
 // TODO: Date() y el date del segmento
@@ -180,78 +176,3 @@ const getMergedSumarizingSegment = (toAdd: ISumarizationSegment, matching: ISuma
 	matching.accuracy++;
 	return matching;
 }
-
-/**
- * ? -----------------
- * ? PREDICCION
- * ? -----------------
- */
-
-export const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
-	items.map((item: ISumarizingObject) =>
-		<ISumarizedObject> {
-			cityId: item.cityId,
-			date: Date.parse(new Date().toDateString()),
-			ranges: sampleTracks(item)
-		}
-	);
-
-const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
-	const result: IPredictionSegment[] = [];
-
-	let ranges: IRange[] = [];
-	let accelerometers: IAccelerometer[] = [];
-	let segments: IPredictionSegment[] = [];
-
-	item.tracks.forEach((track: ITrack) => {
-		ranges.push(...track.ranges);
-		accelerometers.push(...track.accelerometers);
-	});
-
-	segments = ranges.map((r: IRange) => mapToPredictionSegment(r, accelerometers));
-
-	segments.forEach((s: IPredictionSegment) => {
-		const index = findMatchingSegment(s, result);
-		if (index === -1) {
-			result.push(s);
-		} else {
-			const matching = result.splice(index, 1)[0];
-			const merged = getMergedSegment(s, matching);
-			result.push(merged);
-		}
-	});
-
-	return result;
-}
-
-const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
-	const {
-		id,
-		samples,
-		...relevantFields
-	} = matching;
-	return <IPredictionSegment> {
-		...relevantFields,
-		id: [...toAdd.id, ...matching.id],
-		samples: [...toAdd.samples, ...matching.samples]
-	};
-}
-
-const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
-	const {
-		id,
-		speed,
-		stabilityEvents,
-		...relevantFields
-	} = range;
-	return <IPredictionSegment> {
-		...relevantFields,
-		id: [range.id],
-		samples: getSamples(range.id, accelerometers)
-	};
-}
-
-const getSamples = (id: number, accelerometers: IAccelerometer[]): number[][][] =>
-	accelerometers
-		.filter((a: IAccelerometer) => a.id === id)
-		.map((a: IAccelerometer) => getTensorSample(a));

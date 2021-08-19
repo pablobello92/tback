@@ -2,21 +2,11 @@ export {};
 
 import express from 'express';
 import PredictedRoadTypes from '../models/predictedRoadTypes';
-
 import {
-    Tensor4D,
-    tensor4d,
-    Tensor,
-    loadLayersModel,
-    Rank,
-    LayersModel
-} from '@tensorflow/tfjs-node';
+    getCenter,
+    getDistance
+} from 'geolib';
 import {
-    getTracksMapByCity,
-    sampleTracksByCity
-} from './tracks';
-import {
-    tap,
     map,
     switchMap
 } from 'rxjs/operators';
@@ -26,81 +16,32 @@ import {
     of
 } from 'rxjs';
 import {
+    Tensor4D,
+    tensor4d,
+    Tensor,
+    loadLayersModel,
+    Rank,
+    LayersModel,
+    Tensor3D,
+    TensorLike
+} from '@tensorflow/tfjs-node';
+import {
+    getTracksMapByCity
+} from './tracks';
+import {
     IAccelerometer,
+    IBaseSegment,
+    IPredictionSegment,
+    IRange,
     ISumarizedObject,
     ISumarizingObject,
+    ITrack,
     TensorSample
 } from '../interfaces/Track';
-import {
-    tensorSample
-} from './mocks';
-
-interface PredictionType {
-    id: number;
-    description: string;
-};
-
-enum modelPaths  {
-    roads ='file://src/assets/tensorFlowCore/roads/model.json',
-    anomalies = 'file://src/assets/tensorFlowCore/anomalies/model.json',
-};
-
-class PredictionTypes {
-
-    private roadTypes: PredictionType[] = [
-        {
-            id: 0,
-            description: 'Asphalt'
-        },
-        {
-            id: 1,
-            description: 'Cobbles'
-        },
-        {
-            id: 2,
-            description: 'Concrete'
-        },
-        {
-            id: 3,
-            description: 'Earth'
-        }
-    ];
-
-    private anomalyTypes: PredictionType[] = [
-        {
-            id: 0,
-            description: 'Call'
-        },
-        {
-            id: 1,
-            description: 'Door'
-        },
-        {
-            id: 2,
-            description: 'Message'
-        },
-        {
-            id: 3,
-            description: 'Pothole'
-        },
-        {
-            id: 4,
-            description: 'Speed Bump'
-        },
-        {
-            id: 5,
-            description: 'Street Gutter'
-        }
-    ];
-
-    public getRoadType(id: number): PredictionType {
-        return this.roadTypes.find((item: PredictionType) => item.id === id);
-    }
-
-    public getAnomalyType(id: number): PredictionType {
-        return this.anomalyTypes.find((item: PredictionType) => item.id === id);
-    }
-}
+import { 
+    PATHS,
+    TENSOR_SAMPLE_SIZE
+} from '../shared/constants';
 
 export const predictRoadsCallback = (req: express.Request, res: express.Response): void => {
     console.log('\n'.repeat(20));
@@ -114,41 +55,128 @@ export const predictRoadsCallback = (req: express.Request, res: express.Response
     getTracksMapByCity('cityId startTime ranges accelerometers')
         .pipe(
             map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
-            switchMap((predictions: ISumarizedObject[]) => {
-                predictions.map((p: ISumarizedObject) => {
-                });
-                return of(predictions)
-            }),
-            switchMap((predictions: ISumarizedObject[]) => replacePredictions(predictions))
+            switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData)),
+            //switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity))
         )
         .subscribe((result: any) => {
             res.status(200).send(result);
             res.end();
         }, (error: Error) => {
-            console.error(error);
             res.status(500).send(error);
             res.end();
         });
-
-    /* predictSample(tensorSample)
-    .then(response => {
-        res.send(response);
-    }, error => {
-        console.error(error);
-        res.send(error);
-    }); */
 }
 
-const predictSample = (model: LayersModel, sample: any): any => {
+const predictSamplesByCity = (items: ISumarizedObject[]): Observable<ISumarizedObject[]> =>
+    from(loadModel(PATHS.ROADS))
+    .pipe(
+        map((model: LayersModel) => items.map((item: ISumarizedObject) => {
+            item.ranges.forEach((r: IPredictionSegment) => {
+                r.score = calculateScore(r.samples, model);
+            });
+            return item;
+        }))
+    )
+
+const loadModel = (path: string): Promise<LayersModel | Error> =>
+    loadLayersModel(path)
+    .catch((error: any) => new Error(error))
+
+const calculateScore = (samples: TensorSample[], model: LayersModel): number => {
+    const WINDOWS = (samples.length / TENSOR_SAMPLE_SIZE);
+    for (let i = 0; i < WINDOWS; i++) {
+        let temp = samples.slice(i * TENSOR_SAMPLE_SIZE, (i * TENSOR_SAMPLE_SIZE) + TENSOR_SAMPLE_SIZE);
+        const scores = predictSample([temp] as number[][][][], model);
+        console.log(scores);
+    }
+    // retornar el que mas se repite??
+    return 99;
+}
+
+const predictSample = (sample: any, model: LayersModel): any => {
     const tensor: Tensor4D = tensor4d(sample);
     const result: Tensor<Rank> = model.predict(tensor) as Tensor;
     return result.dataSync();
 }
 
-//? The model is loaded only once for the entire prediction
-const loadModel = (path: string): Promise<LayersModel | Error> =>
-    loadLayersModel(path)
-    .catch((error: any) => new Error(error))
+const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
+	items.map((item: ISumarizingObject) =>
+		<ISumarizedObject> {
+			cityId: item.cityId,
+			date: Date.parse(new Date().toDateString()),
+			ranges: sampleTracks(item)
+		}
+	);
+
+const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
+	const result: IPredictionSegment[] = [];
+
+	let ranges: IRange[] = [];
+	let accelerometers: IAccelerometer[] = [];
+	let segments: IPredictionSegment[] = [];
+
+	item.tracks.forEach((track: ITrack) => {
+		ranges.push(...track.ranges);
+		accelerometers.push(...track.accelerometers);
+	});
+
+	segments = ranges.map((r: IRange) => mapToPredictionSegment(r, accelerometers));
+
+	segments.forEach((s: IPredictionSegment) => {
+		const index = findMatchingSegment(s, result);
+		if (index === -1) {
+			result.push(s);
+		} else {
+			const matching = result.splice(index, 1)[0];
+			const merged = getMergedSegment(s, matching);
+			result.push(merged);
+		}
+	});
+
+	result.forEach((s: IPredictionSegment) => {
+		addEmptySamples(s.samples, TENSOR_SAMPLE_SIZE);
+	});
+
+	return result;
+}
+
+const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
+	const {
+		id,
+		samples,
+		...relevantFields
+	} = matching;
+	return <IPredictionSegment> {
+		...relevantFields,
+		id: [...toAdd.id, ...matching.id],
+		samples: [...toAdd.samples, ...matching.samples]
+	};
+}
+
+const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
+	const {
+		id,
+		speed,
+		stabilityEvents,
+		...relevantFields
+	} = range;
+	return <IPredictionSegment> {
+		...relevantFields,
+		id: [range.id],
+		samples: getSamples(range.id, accelerometers)
+	};
+}
+
+const getSamples = (id: number, accelerometers: IAccelerometer[]): number[][][] =>
+	accelerometers
+		.filter((a: IAccelerometer) => a.id === id)
+		.map((a: IAccelerometer) => getTensorSample(a));
+
+const replacePredictions = (values: any): Observable<Error | any> =>
+    from(removePredictions())
+    .pipe(
+        switchMap((res: any) => insertPredictions(values))
+    );
 
 const removePredictions = (): Promise<Error | any> =>
     PredictedRoadTypes.deleteMany({})
@@ -158,14 +186,8 @@ const insertPredictions = (values: any): Promise<Error | any> =>
     PredictedRoadTypes.insertMany(values)
         .catch((error: any) => new Error(error));
 
-const replacePredictions = (values: any): Observable<Error | any> =>
-    from(removePredictions())
-    .pipe(
-        switchMap((res: any) => insertPredictions(values))
-    );
-
 export const getTensorSample = (a?: IAccelerometer): TensorSample =>
-    a ? [
+    (a !== null) ? [
         [a.x.raw],
         [a.y.raw],
         [a.z.raw],
@@ -182,21 +204,41 @@ export const getTensorSample = (a?: IAccelerometer): TensorSample =>
         [0]
     ];
 
-export const addEmptySamples(original: TensorSample[], n: number): TensorSample[] => {
-    const copy: TensorSample[] = [...original];
-    const remainder = original.length % n;
-    for (let i = 0; i < remainder; i++) {
-        copy.push(getTensorSample(null));
+export const addEmptySamples = (samples: TensorSample[], n: number): void => {
+    const remainder = samples.length % n;
+    for (let i = 0; i < (n - remainder); i++) {
+        samples.push(getTensorSample(null));
     }
-    return copy;
 }
 
 /**
  * ?------------------
  * ? ANOMALIAS
- * * ?------------------
+ * ?------------------
  */
 
 export const predictAnomaliesCallback = (req: express.Request, res: express.Response): void => {
     res.send(["anomalies predicted!"]);
+}
+
+
+
+/**
+ * ? --------------------------------------
+ * ? FUNCIONES COMUNES A AMBAS PREDICCIONES
+ * ? --------------------------------------
+ */
+
+const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
+    array.findIndex((s: IBaseSegment) => matches(mySegment, s));
+
+const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
+    const center: any = getCenter([a.start, a.end]);
+    const length: number = getDistance(b.start, b.end);
+    const distanceToStart: number = getDistance(b.start, center);
+    const distanceToEnd: number = getDistance(b.end, center);
+    return (
+        distanceToStart < length &&
+        distanceToEnd < length
+    );
 }
