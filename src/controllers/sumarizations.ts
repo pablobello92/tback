@@ -54,11 +54,9 @@ export const sumarizeTracksCallback = (req: express.Request, res: express.Respon
             switchMap((sumarizations: ISumarizedObject[]) => replaceSumarizations(sumarizations))
         )
         .subscribe((result: any) => {
-            res.send(result);
-            res.end();
+            res.status(200).end();
         }, (error: Error) => {
-            res.send(error);
-            res.end();
+            res.status(500).end();
         });
 }
 

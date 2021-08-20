@@ -62,11 +62,9 @@ export const executePredictionsCallback = (req: express.Request, res: express.Re
             switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity))
         )
         .subscribe((result: any) => {
-            res.status(200).send(result);
-            res.end();
+            res.status(200).end();
         }, (error: Error) => {
-            res.status(500).send(error);
-            res.end();
+            res.status(500).end();
         });
 }
 
