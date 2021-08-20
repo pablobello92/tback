@@ -19,6 +19,6 @@ const reparationSchema = new Schema({
     },
 });
 
-const Reparation = model('Reparation', reparationSchema, 'reparations');
+const Reparation = model('Reparations', reparationSchema, 'reparations');
 
 export default Reparation;

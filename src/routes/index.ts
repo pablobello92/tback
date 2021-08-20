@@ -9,7 +9,7 @@ import { getCitiesCallback } from '../controllers/cities';
 import { getTracksCallback } from '../controllers/tracks';
 import { sumarizeTracksCallback, getSumarizationsCallback } from '../controllers/sumarizations';
 import { getReparationsCallback, putReparationCallback } from'../controllers/reparations';
-import { predictRoadsCallback, predictAnomaliesCallback } from '../controllers/predictions';
+import { executePredictionsCallback } from '../controllers/predictions';
 
 api.get('/', indexCallback);
 api.post('/api/login', loginCallBack);
@@ -21,8 +21,7 @@ api.get('/api/sumarizations', sumarizeTracksCallback);
 api.get('/api/sumarizations/get', getSumarizationsCallback);
 api.get('/api/reparations', getReparationsCallback);
 api.put('/api/reparations/insert', putReparationCallback);
-api.post('/api/predictions/roadTypes', predictRoadsCallback);
-api.post('/api/predictions/anomalies', predictAnomaliesCallback);
+api.post('/api/predictions', executePredictionsCallback);
 api.get('*', notFoundCallback);
 
 export default api;

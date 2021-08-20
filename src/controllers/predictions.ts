@@ -1,15 +1,10 @@
 export {};
 
 import express from 'express';
-import PredictedRoadTypes from '../models/predictedRoadTypes';
-import {
-    getCenter,
-    getDistance
-} from 'geolib';
+import PredictedRoadTypes from '../models/prediction';
 import {
     map,
-    switchMap,
-    tap
+    switchMap
 } from 'rxjs/operators';
 import { 
     from,
@@ -45,37 +40,22 @@ import {
 } from '../shared/constants';
 
 
-export const predictAnomaliesCallback = (req: express.Request, res: express.Response): void => {
+export const executePredictionsCallback = (req: express.Request, res: express.Response): void => {
     console.log('\n'.repeat(20));
     console.log('----------------');
-    console.log('PREDECIR ANOMALIAS');
+    console.log('PREDECIR');
     console.log('----------------');
 
-    getTracksMapByCity('cityId startTime ranges accelerometers')
-    .pipe(
-        map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
-        switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData)),
-        switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity))
-    )
-    .subscribe((result: any) => {
-        res.status(200).send(result);
-        res.end();
-    }, (error: Error) => {
-        res.status(500).send(error);
-        res.end();
-    });
-}
+    // TODO: testear filtrado por campo req.body.linkedCities
+    // TODO: diferenciar las predicciones en base a la constante anomalies
 
-export const predictRoadsCallback = (req: express.Request, res: express.Response): void => {
-    console.log('\n'.repeat(20));
-    console.log('----------------');
-    console.log('PREDECIR SUELOS');
-    console.log('----------------');
-    
-    // TODO: añadir soporte para filtrado en getTracksMapByCity()
-    // TODO: agregar filtrado por campo req.body.linkedCities
+    const anomalies: boolean = req.body.anomalies;
 
-    getTracksMapByCity('cityId startTime ranges accelerometers')
+    const filter: any = {
+        id: req.body.linkedCities
+    };
+
+    getTracksMapByCity(filter, 'cityId startTime ranges accelerometers')
         .pipe(
             map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
             switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData)),
@@ -255,10 +235,10 @@ const insertPredictions = (values: any): Promise<Error | any> =>
 export const getTensorSample = (a?: IAccelerometer): TensorSample =>
     (a !== null) ? [
         [a.x.raw],
-        [a.x.diff],
         [a.y.raw],
-        [a.y.diff],
         [a.z.raw],
+        [a.x.diff],
+        [a.y.diff],
         [a.z.diff]
     ] : 
     [

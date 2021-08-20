@@ -46,11 +46,9 @@ const getSumarizationsByFilter = (filter: {}): Promise<Error | any> =>
     Sumarization.find(filter).lean()
         .catch((error: any) => new Error(error));
 
-//? Aca debe ir la funcion para descartar...
-//? AL FINAL LO DE DESCARTAR SEGMENTOS REPARADOS NO LO VOY A IMPLEMENTAR...
-
+// TODO: agregar el filtrado por ciudades vinculadas igual que con las predicciones
 export const sumarizeTracksCallback = (req: express.Request, res: express.Response): void => {
-    getTracksMapByCity('cityId startTime ranges')
+    getTracksMapByCity({}, 'cityId startTime ranges')
     .pipe(
             map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
             switchMap((sumarizations: ISumarizedObject[]) => replaceSumarizations(sumarizations))

@@ -6,7 +6,7 @@ import {
 } from 'mongoose';
 
 
-const predictedRoadTypesSchema = new Schema({
+const prediction = new Schema({
     _id: Schema.Types.ObjectId,
     cityId: Number,
     date: Number,
@@ -25,6 +25,6 @@ const predictedRoadTypesSchema = new Schema({
     }]
 });
 
-const PredictedRoadTypes = model('PredictedRoadTypes', predictedRoadTypesSchema, 'predictedRoadTypes');
+const Prediction = model('Predictions', prediction, 'predictions');
 
-export default PredictedRoadTypes;
+export default Prediction;

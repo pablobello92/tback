@@ -60,8 +60,8 @@ export const getTracksCallback = (req: express.Request, res: express.Response): 
 // TODO: Remove LIMIT = 2
 // !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
 // !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
-export const getTracksMapByCity = (fields: string): Observable < any > =>
-	from(fetchCityFields('id'))
+export const getTracksMapByCity = (filter: {}, fields: string): Observable < any > =>
+	from(fetchCityFields(filter, 'id'))
 		.pipe(
 			mergeMap((cityIds: number[]) => {
 				const observables = cityIds.map((cityId: number) =>
