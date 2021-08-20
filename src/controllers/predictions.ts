@@ -8,7 +8,8 @@ import {
 } from 'geolib';
 import {
     map,
-    switchMap
+    switchMap,
+    tap
 } from 'rxjs/operators';
 import { 
     from,
@@ -21,9 +22,7 @@ import {
     Tensor,
     loadLayersModel,
     Rank,
-    LayersModel,
-    Tensor3D,
-    TensorLike
+    LayersModel
 } from '@tensorflow/tfjs-node';
 import {
     getTracksMapByCity
@@ -73,26 +72,31 @@ export const predictRoadsCallback = (req: express.Request, res: express.Response
 const predictSamplesByCity = (items: ISumarizedObject[]): Observable<ISumarizedObject[]> =>
     from(loadModel(PATHS.ROADS))
     .pipe(
-        map((model: LayersModel) => items.map((item: ISumarizedObject) => {
-            item.ranges.map((r: IPredictionSegment) => {
-                const newScore = calculateScore(r.samples, model);
-                const {
-                    samples,
-                    score,
-                    ...relevantFields
-                } = r;
-                return <ISegment> {
-                    ...relevantFields,
-                    score: newScore
-                };
-            });
-            return item;
-        }))
+        map((model: LayersModel) => {
+            return items.map((item: ISumarizedObject) => addScores(model, item))
+        })
     )
 
 const loadModel = (path: string): Promise<LayersModel | Error> =>
     loadLayersModel(path)
     .catch((error: any) => new Error(error))
+
+//? THIS CODE IS GARBAGE... REPLACE IT LATER...
+const addScores = (model: LayersModel, item: ISumarizedObject): ISumarizedObject => {
+    let newRanges:ISegment[] = [];
+    item.ranges.forEach((r: IPredictionSegment) => {
+        const newObject: ISegment = {
+            start: r.start,
+            end: r.end,
+            date: r.date,
+            distance: r.distance,
+            score: calculateScore(r.samples, model)
+        };
+        newRanges.push(newObject);
+    });
+    item.ranges = newRanges;
+    return item;
+}
 
 const calculateScore = (samples: TensorSample[], model: LayersModel): number => {
     const WINDOWS = (samples.length / TENSOR_SAMPLE_SIZE);

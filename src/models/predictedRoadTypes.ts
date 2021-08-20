@@ -21,8 +21,7 @@ const predictedRoadTypesSchema = new Schema({
         },
         date: Number,
         score: Number,
-        distance: Number,
-        id: [Number]
+        distance: Number
     }]
 });
 
