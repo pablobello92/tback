@@ -88,66 +88,7 @@ const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: numbe
 		.catch((error: any) => new Error(error));
 }
 
-/**
- * ? -----------------
- * ? SUMARIZACION
- * ? -----------------
- */
-
-export const sumarizeTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
-	items.map((item: ISumarizingObject) => sumarizeTracks(item));
-
-const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
-	const date = Date.parse(new Date().toDateString());
-	const sumarizedSegments: ISumarizationSegment[] = [];
-
-	item.tracks.forEach((track: ITrack) => {
-		sumarizeNextTrack(sumarizedSegments, track);
-	});
-
-	return <ISumarizedObject> {
-		cityId: item.cityId,
-		date,
-		ranges: sumarizedSegments
-	};
-}
-
-const sumarizeNextTrack = (array: ISumarizationSegment[], track: ITrack): void => {
-	let ranges: IRange[] = track.ranges;
-	let segments: ISumarizationSegment[] = [];
-
-	segments = ranges.map((r: IRange) => mapRangeToSumarizingSegment(r));
-
-	segments.forEach((s: ISumarizationSegment) => {
-		const toPush = addSumarizingSegment(s, array);
-		array.push(toPush);
-	});
-}
-
-const mapRangeToSumarizingSegment = (range: IRange): ISumarizationSegment => {
-	const {
-		speed,
-		stabilityEvents,
-		...relevantFields
-	} = range;
-	return <ISumarizationSegment > {
-		...relevantFields,
-		accuracy: 1
-	};
-}
-
-const addSumarizingSegment = (toAdd: ISumarizationSegment, array: ISumarizationSegment[]): ISumarizationSegment => {
-	const index = findMatchingSegment(toAdd, array);
-	if (index === -1) {
-		return toAdd;
-	} else {
-		const matching = array.splice(index, 1)[0];
-		const merged = getMergedSumarizingSegment(toAdd, matching);
-		return merged;
-	}
-}
-
-const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
+export const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
     array.findIndex((s: IBaseSegment) => matches(mySegment, s));
 
 const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
@@ -159,20 +100,4 @@ const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
         distanceToStart < length &&
         distanceToEnd < length
     );
-}
-
-// TODO: Refactorizar esto... deberia ir en un archivo aparte de configuracion o de constantes
-// TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
-// TODO: Date() y el date del segmento
-// TODO: estoy dando por hecho que el nuevo tiene fecha mas reciente...
-// TODO: comparar fechas y ahi decido cual es el new y el old
-
-const NEW_DATA_WEIGHT = 0.6;
-const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
-
-const getMergedSumarizingSegment = (toAdd: ISumarizationSegment, matching: ISumarizationSegment): ISumarizationSegment => {
-	matching.score = matching.score * OLD_DATA_WEIGHT + toAdd.score * NEW_DATA_WEIGHT;
-	matching.date = toAdd.date;
-	matching.accuracy++;
-	return matching;
 }

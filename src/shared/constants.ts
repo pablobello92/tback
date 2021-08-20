@@ -1,4 +1,13 @@
 
+// TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
+// TODO: Date() y el date del segmento
+// TODO: estoy dando por hecho que el nuevo tiene fecha mas reciente...
+// TODO: comparar fechas y ahi decido cual es el new y el old
+
+export enum DATA_WEIGHT {
+    OLD = 0.4, // 1 - NEW
+    NEW = 0.6
+}
 
 export const TENSOR_SAMPLE_SIZE = 85;
 

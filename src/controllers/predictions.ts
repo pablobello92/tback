@@ -13,8 +13,7 @@ import {
 } from 'rxjs/operators';
 import { 
     from,
-    Observable,
-    of
+    Observable
 } from 'rxjs';
 import {
     Tensor4D,
@@ -25,11 +24,11 @@ import {
     LayersModel
 } from '@tensorflow/tfjs-node';
 import {
+    findMatchingSegment,
     getTracksMapByCity
 } from './tracks';
 import {
     IAccelerometer,
-    IBaseSegment,
     IRange,
     ISegment,
     ISumarizedObject,
@@ -225,6 +224,24 @@ const insertPredictions = (values: any): Promise<Error | any> =>
     PredictedRoadTypes.insertMany(values)
         .catch((error: any) => new Error(error));
 
+/**
+ * ?------------------
+ * ? ANOMALIAS
+ * ?------------------
+ */
+
+export const predictAnomaliesCallback = (req: express.Request, res: express.Response): void => {
+    res.send(["anomalies predicted!"]);
+}
+
+
+
+/**
+ * ? --------------------------------------
+ * ? FUNCIONES COMUNES A AMBAS PREDICCIONES
+ * ? --------------------------------------
+ */
+
 export const getTensorSample = (a?: IAccelerometer): TensorSample =>
     (a !== null) ? [
         [a.x.raw],
@@ -248,36 +265,4 @@ export const addEmptySamples = (samples: TensorSample[], n: number): void => {
     for (let i = 0; i < (n - remainder); i++) {
         samples.push(getTensorSample(null));
     }
-}
-
-/**
- * ?------------------
- * ? ANOMALIAS
- * ?------------------
- */
-
-export const predictAnomaliesCallback = (req: express.Request, res: express.Response): void => {
-    res.send(["anomalies predicted!"]);
-}
-
-
-
-/**
- * ? --------------------------------------
- * ? FUNCIONES COMUNES A AMBAS PREDICCIONES
- * ? --------------------------------------
- */
-
-const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
-    array.findIndex((s: IBaseSegment) => matches(mySegment, s));
-
-const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
-    const center: any = getCenter([a.start, a.end]);
-    const length: number = getDistance(b.start, b.end);
-    const distanceToStart: number = getDistance(b.start, center);
-    const distanceToEnd: number = getDistance(b.end, center);
-    return (
-        distanceToStart < length &&
-        distanceToEnd < length
-    );
 }
