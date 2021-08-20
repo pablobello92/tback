@@ -44,6 +44,28 @@ import {
     TENSOR_SAMPLE_SIZE
 } from '../shared/constants';
 
+
+export const predictAnomaliesCallback = (req: express.Request, res: express.Response): void => {
+    console.log('\n'.repeat(20));
+    console.log('----------------');
+    console.log('PREDECIR ANOMALIAS');
+    console.log('----------------');
+
+    getTracksMapByCity('cityId startTime ranges accelerometers')
+    .pipe(
+        map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
+        switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData)),
+        switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity))
+    )
+    .subscribe((result: any) => {
+        res.status(200).send(result);
+        res.end();
+    }, (error: Error) => {
+        res.status(500).send(error);
+        res.end();
+    });
+}
+
 export const predictRoadsCallback = (req: express.Request, res: express.Response): void => {
     console.log('\n'.repeat(20));
     console.log('----------------');
@@ -223,18 +245,6 @@ const removePredictions = (): Promise<Error | any> =>
 const insertPredictions = (values: any): Promise<Error | any> =>
     PredictedRoadTypes.insertMany(values)
         .catch((error: any) => new Error(error));
-
-/**
- * ?------------------
- * ? ANOMALIAS
- * ?------------------
- */
-
-export const predictAnomaliesCallback = (req: express.Request, res: express.Response): void => {
-    res.send(["anomalies predicted!"]);
-}
-
-
 
 /**
  * ? --------------------------------------
