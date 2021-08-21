@@ -149,7 +149,10 @@ const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
 		accelerometers.push(...track.accelerometers);
 	});
 
-	segments = ranges.map((r: IRange) => mapToPredictionSegment(r, accelerometers));
+	segments = ranges.map((r: IRange) => {
+        const filteredAccelerometers = filterAccelerometers(r, accelerometers);
+        return mapToPredictionSegment(r, filteredAccelerometers);
+    });
 
 	segments.forEach((s: IPredictionSegment) => {
 		const index = findMatchingSegment(s, result);
@@ -168,6 +171,10 @@ const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
 
 	return result;
 }
+
+const filterAccelerometers = (range: IRange, accelerometers: IAccelerometer[]): IAccelerometer[] => 
+    accelerometers
+        .filter((a: IAccelerometer) => a.id === range.id);
 
 const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
 	const {
@@ -192,14 +199,9 @@ const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[])
 	return <IPredictionSegment> {
 		...relevantFields,
 		id: [range.id],
-		samples: getSamples(range.id, accelerometers)
+		samples: accelerometers.map((a: IAccelerometer) => getTensorSample(a) as number[][])
 	};
 }
-
-const getSamples = (id: number, accelerometers: IAccelerometer[]): number[][][] =>
-	accelerometers
-		.filter((a: IAccelerometer) => a.id === id)
-		.map((a: IAccelerometer) => getTensorSample(a));
 
 const replacePredictions = (values: any, type: number): Observable<Error | any> =>
     from(removePredictions({ type }))
