@@ -50,6 +50,7 @@ export interface ITrack {
 }
 
 interface IBaseCityGroupObject {
+    type?: number;
     cityId: number;
     date? : number;
 }

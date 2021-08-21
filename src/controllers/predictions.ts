@@ -39,27 +39,22 @@ import {
     TENSOR_SAMPLE_SIZE
 } from '../shared/constants';
 
-
 export const executePredictionsCallback = (req: express.Request, res: express.Response): void => {
     console.log('\n'.repeat(20));
     console.log('----------------');
     console.log('PREDECIR');
     console.log('----------------');
 
-    // TODO: testear filtrado por campo req.body.linkedCities
-    // TODO: diferenciar las predicciones en base a la constante anomalies
-
-    const anomalies: boolean = req.body.anomalies;
-
+    const type: number = parseInt(req.body.type);
     const filter: any = {
         id: req.body.linkedCities
     };
 
     getTracksMapByCity(filter, 'cityId startTime ranges accelerometers')
         .pipe(
-            map((allData: ISumarizingObject[]) => sampleTracksByCity(allData)),
+            map((allData: ISumarizingObject[]) => sampleTracksByCity(allData, type)),
             switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData)),
-            switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity))
+            switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity, type))
         )
         .subscribe((result: any) => {
             res.status(200).end();
@@ -89,7 +84,7 @@ const addScores = (model: LayersModel, item: ISumarizedObject): ISumarizedObject
             end: r.end,
             date: r.date,
             distance: r.distance,
-            score: calculateScore(r.samples, model)
+            score: calculateScore(r.samples, item.type, model)
         };
         newRanges.push(newObject);
     });
@@ -97,7 +92,7 @@ const addScores = (model: LayersModel, item: ISumarizedObject): ISumarizedObject
     return item;
 }
 
-const calculateScore = (samples: TensorSample[], model: LayersModel): number => {
+const calculateScore = (samples: TensorSample[], type: number, model: LayersModel): number => {
     const WINDOWS = (samples.length / TENSOR_SAMPLE_SIZE);
     let scores: number[] = [];
     for (let i = 0; i < WINDOWS; i++) {
@@ -137,9 +132,10 @@ const getCommon = (items: number[]): number => {
     return result;
 }
 
-const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
+const sampleTracksByCity = (items: ISumarizingObject[], type: number): ISumarizedObject[] =>
 	items.map((item: ISumarizingObject) =>
 		<ISumarizedObject> {
+            type,
 			cityId: item.cityId,
 			date: Date.parse(new Date().toDateString()),
 			ranges: sampleTracks(item)
@@ -210,25 +206,19 @@ const getSamples = (id: number, accelerometers: IAccelerometer[]): number[][][] 
 		.filter((a: IAccelerometer) => a.id === id)
 		.map((a: IAccelerometer) => getTensorSample(a));
 
-const replacePredictions = (values: any): Observable<Error | any> =>
-    from(removePredictions())
+const replacePredictions = (values: any, type: number): Observable<Error | any> =>
+    from(removePredictions({ type }))
     .pipe(
         switchMap((res: any) => insertPredictions(values))
     );
 
-const removePredictions = (): Promise<Error | any> =>
-    PredictedRoadTypes.deleteMany({})
+const removePredictions = (filter: {}): Promise<Error | any> =>
+    PredictedRoadTypes.deleteMany(filter)
         .catch((error: any) => new Error(error));
 
 const insertPredictions = (values: any): Promise<Error | any> =>
     PredictedRoadTypes.insertMany(values)
         .catch((error: any) => new Error(error));
-
-/**
- * ? --------------------------------------
- * ? FUNCIONES COMUNES A AMBAS PREDICCIONES
- * ? --------------------------------------
- */
 
 export const getTensorSample = (a?: IAccelerometer): TensorSample =>
     (a !== null) ? [

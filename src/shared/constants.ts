@@ -11,6 +11,11 @@ export enum DATA_WEIGHT {
 
 export const TENSOR_SAMPLE_SIZE = 85;
 
+export enum PREDICTION_TYPES {
+    ROADS,
+    ANOMALIES
+}
+
 export enum PATHS {
     ROADS ='file://src/assets/tensorFlowCore/roads/model.json',
     ANOMALIES = 'file://src/assets/tensorFlowCore/anomalies/model.json',

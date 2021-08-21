@@ -9,6 +9,7 @@ import {
 const prediction = new Schema({
     _id: Schema.Types.ObjectId,
     cityId: Number,
+    type: Number,
     date: Number,
     ranges: [{
         start: {
