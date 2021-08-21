@@ -40,11 +40,6 @@ import {
 } from '../shared/constants';
 
 export const executePredictionsCallback = (req: express.Request, res: express.Response): void => {
-    console.log('\n'.repeat(20));
-    console.log('----------------');
-    console.log('PREDECIR');
-    console.log('----------------');
-
     const type: number = parseInt(req.body.type);
     const filter: any = {
         id: req.body.linkedCities
