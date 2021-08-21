@@ -75,22 +75,21 @@ const loadModel = (path: string): Promise<LayersModel | Error> =>
     loadLayersModel(path)
     .catch((error: any) => new Error(error))
 
-//? THIS CODE IS GARBAGE... REPLACE IT LATER...
-const addScores = (model: LayersModel, item: ISumarizedObject): ISumarizedObject => {
-    let newRanges:ISegment[] = [];
-    item.ranges.forEach((r: IPredictionSegment) => {
-        const newObject: ISegment = {
-            start: r.start,
-            end: r.end,
-            date: r.date,
-            distance: r.distance,
-            score: calculateScore(r.samples, item.type, model)
-        };
-        newRanges.push(newObject);
-    });
-    item.ranges = newRanges;
-    return item;
-}
+const addScores = (model: LayersModel, item: ISumarizedObject): ISumarizedObject => 
+    <ISumarizedObject>{
+        type: item.type,
+        cityId: item.cityId,
+        date: item.date,
+        ranges: item.ranges.map((r: IPredictionSegment) => 
+            <ISegment> {
+                start: r.start,
+                end: r.end,
+                date: r.date,
+                distance: r.distance,
+                score: calculateScore(r.samples, item.type, model)
+            }
+        )
+    }
 
 const calculateScore = (samples: TensorSample[], type: number, model: LayersModel): number => {
     const WINDOWS = (samples.length / TENSOR_SAMPLE_SIZE);
@@ -110,6 +109,7 @@ const predictSample = (sample: any, model: LayersModel): any => {
     return result.dataSync();
 }
 
+// TODO: check the undefined cases!!!
 const getPredominantType = (array: Float32Array): number => {
     return array.indexOf(Math.max(...array));
 }
