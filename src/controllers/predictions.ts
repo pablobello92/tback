@@ -133,11 +133,11 @@ const sampleTracksByCity = (items: ISumarizingObject[], type: number): ISumarize
             type,
 			cityId: item.cityId,
 			date: Date.parse(new Date().toDateString()),
-			ranges: sampleTracks(item)
+			ranges: sampleTracks(item, type)
 		}
 	);
 
-const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
+const sampleTracks = (item: ISumarizingObject, type: number): IPredictionSegment[] => {
 	const result: IPredictionSegment[] = [];
 
 	let ranges: IRange[] = [];
@@ -150,7 +150,7 @@ const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
 	});
 
 	segments = ranges.map((r: IRange) => {
-        const filteredAccelerometers = filterAccelerometers(r, accelerometers);
+        const filteredAccelerometers = filterAccelerometers(r, accelerometers, type);
         return mapToPredictionSegment(r, filteredAccelerometers);
     });
 
@@ -172,9 +172,9 @@ const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
 	return result;
 }
 
-const filterAccelerometers = (range: IRange, accelerometers: IAccelerometer[]): IAccelerometer[] => 
+const filterAccelerometers = (range: IRange, accelerometers: IAccelerometer[], type: number): IAccelerometer[] =>
     accelerometers
-        .filter((a: IAccelerometer) => a.id === range.id);
+    .filter((a: IAccelerometer) => a.id === range.id);
 
 const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
 	const {
