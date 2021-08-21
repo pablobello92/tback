@@ -1,8 +1,6 @@
 export {};
 import express from 'express';
-
 import Sumarization from '../models/sumarization';
-
 import {
     map,
     switchMap
@@ -46,9 +44,11 @@ const getSumarizationsByFilter = (filter: {}): Promise<Error | any> =>
     Sumarization.find(filter).lean()
         .catch((error: any) => new Error(error));
 
-// TODO: agregar el filtrado por ciudades vinculadas igual que con las predicciones
-export const sumarizeTracksCallback = (req: express.Request, res: express.Response): void => {
-    getTracksMapByCity({}, 'cityId startTime ranges')
+export const executeSumarizationCallback = (req: express.Request, res: express.Response): void => {
+    const filter: any = {
+        id: req.body.linkedCities
+    };
+    getTracksMapByCity(filter, 'cityId startTime ranges')
     .pipe(
             map((allData: ISumarizingObject[]) => sumarizeTracksByCity(allData)),
             switchMap((sumarizations: ISumarizedObject[]) => replaceSumarizations(sumarizations))
