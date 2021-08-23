@@ -4,7 +4,7 @@ interface Axis {
     diff: number;
 }
 
-interface StabilityEvent {
+export interface IStabilityEvent {
     id: number;
     startTime: number;
     endTime: number;
@@ -34,7 +34,7 @@ export interface ISegment extends IBaseSegment {
 export interface IRange extends ISegment {
     id: number;
     speed: number;
-    stabilityEvents: StabilityEvent[];
+    stabilityEvents: IStabilityEvent[];
 }
 
 export interface ISumarizationSegment extends ISegment {
@@ -64,11 +64,11 @@ export interface ISumarizedObject extends IBaseCityGroupObject {
 }
 
 export interface IAccelerometer {
-    id: Number;
-    eventId: Number;
-    currentTime: Number;
+    id: number;
+    eventId: number;
+    currentTime: number;
     x: Axis;
     y: Axis;
     z: Axis;
-    axis: String;
+    axis: string;
 }

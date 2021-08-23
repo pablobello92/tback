@@ -16,10 +16,10 @@ export enum PREDICTION_TYPES {
     ANOMALIES
 }
 
-export enum PATHS {
-    ROADS ='file://src/assets/tensorFlowCore/roads/model.json',
-    ANOMALIES = 'file://src/assets/tensorFlowCore/anomalies/model.json',
-};
+export const PATHS = [
+    'file://src/assets/tensorFlowCore/roads/model.json',
+    'file://src/assets/tensorFlowCore/anomalies/model.json'
+];
 
 export enum ROAD_TYPES {
     ASPHALT = 0,

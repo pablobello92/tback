@@ -26,6 +26,7 @@ import {
     IAccelerometer,
     IRange,
     ISegment,
+    IStabilityEvent,
     ISumarizedObject,
     ISumarizingObject,
     ITrack
@@ -48,7 +49,7 @@ export const executePredictionsCallback = (req: express.Request, res: express.Re
     getTracksMapByCity(filter, 'cityId startTime ranges accelerometers')
         .pipe(
             map((allData: ISumarizingObject[]) => sampleTracksByCity(allData, type)),
-            switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData)),
+            switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData, type)),
             switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity, type))
         )
         .subscribe((result: any) => {
@@ -58,8 +59,8 @@ export const executePredictionsCallback = (req: express.Request, res: express.Re
         });
 }
 
-const predictSamplesByCity = (items: ISumarizedObject[]): Observable<ISumarizedObject[]> =>
-    from(loadModel(PATHS.ROADS))
+const predictSamplesByCity = (items: ISumarizedObject[], type: number): Observable<ISumarizedObject[]> =>
+    from(loadModel(PATHS[type]))
     .pipe(
         map((model: LayersModel) => {
             return items.map((item: ISumarizedObject) => addScores(model, item))
@@ -149,9 +150,10 @@ const sampleTracks = (item: ISumarizingObject, type: number): IPredictionSegment
 		accelerometers.push(...track.accelerometers);
 	});
 
+    const firstFilter = discardAccelerometers(accelerometers, type);
 	segments = ranges.map((r: IRange) => {
-        const filteredAccelerometers = filterAccelerometers(r, accelerometers, type);
-        return mapToPredictionSegment(r, filteredAccelerometers);
+        const secondFilter = filterAccelerometersByRange(r, firstFilter, type);
+        return mapToPredictionSegment(r, secondFilter);
     });
 
 	segments.forEach((s: IPredictionSegment) => {
@@ -172,9 +174,33 @@ const sampleTracks = (item: ISumarizingObject, type: number): IPredictionSegment
 	return result;
 }
 
-const filterAccelerometers = (range: IRange, accelerometers: IAccelerometer[], type: number): IAccelerometer[] =>
-    accelerometers
-    .filter((a: IAccelerometer) => a.id === range.id);
+// If a range has ids.length = 0 ==> no anomalies ==> 
+// should have a score of -1 which means "no anomalies"
+// should return a null result which later is casted to a -1 score
+
+//! LUEGO CHEQUEAR QUE LAS CANTIDADES SON 100% COMPLEMENTARIAS Y CORRECTAS
+//! CREO QUE HABIA INCONGRUENCIAS EN LOS LENGTH!!
+//! OJO QUE PUEDE DEBERSE A ALGUNA INCONGRUENCIA EN LOS TRACKS, Y NO EN MI CODIGO
+const filterAccelerometersByRange = (range: IRange, accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
+    const all = accelerometers.filter((a: IAccelerometer) => a.id === range.id);
+    if (type === 0) {
+        return all;
+    } else if (type === 1) {
+        const ids: number[] = range.stabilityEvents.map((e: IStabilityEvent) => e.id);
+        return filterByAnomaly(all, ids);
+    }
+    return undefined;
+}
+
+const filterByAnomaly = (all: IAccelerometer[], ids: number[]): IAccelerometer[] =>
+    all.filter((a: IAccelerometer) => (ids.indexOf(a.eventId) !== -1));
+
+const discardAccelerometers = (accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
+    if (type === 0) {
+        return accelerometers.filter((a: IAccelerometer) => a.eventId === -1)
+    }
+    return accelerometers.filter((a: IAccelerometer) => a.eventId !== -1)
+}
 
 const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
 	const {
@@ -189,6 +215,8 @@ const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegmen
 	};
 }
 
+// TODO: acá va la lógica para aquellos rangos que no tienen acelerometros asociados
+// (solo va a pasar para prediccion de anomalias)
 const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
 	const {
 		id,
