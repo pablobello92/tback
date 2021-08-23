@@ -13,11 +13,15 @@ import {
     listenCallback 
 } from './controllers';
 
-connect('mongodb://localhost:27017/db_tesis', { useNewUrlParser: true, useUnifiedTopology: true });
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
+
+connect(`${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`, { useNewUrlParser: true, useUnifiedTopology: true });
 
 const app = express();
 app.use(json());
 app.use(addHeadersCallback);
 app.use(api);
-app.listen(8000, listenCallback);
+app.listen(process.env.PORT, listenCallback);
 

@@ -18,7 +18,7 @@ export const addHeadersCallback = (req: express.Request, res: express.Response, 
 export const listenCallback = (): void => {
     console.clear();
     console.log('--------------------------------');
-    console.log(`Server running at port 8000`);
+    console.log(`Server running at port ${process.env.PORT}`);
     console.log('--------------------------------');
 };
 
