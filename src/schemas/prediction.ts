@@ -4,6 +4,9 @@ import {
     Schema,
     model
 } from 'mongoose';
+import { 
+    iRange
+} from './subschemas/range';
 
 
 const prediction = new Schema({
@@ -11,18 +14,7 @@ const prediction = new Schema({
     cityId: Number,
     type: Number,
     date: Number,
-    ranges: [{
-        start: {
-            lat: Number,
-            lng: Number
-        },
-        end: {
-            lat: Number,
-            lng: Number
-        },
-        date: Number,
-        score: Number
-    }]
+    ranges: [iRange]
 });
 
 const Prediction = model('Predictions', prediction, 'predictions');

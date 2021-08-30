@@ -1,6 +1,6 @@
 export {};
 import express from 'express';
-import City from './../models/city';
+import City from '../schemas/city';
 
 export const getCitiesCallback = (req: express.Request, res: express.Response): void => {
     fetchCityFields({})

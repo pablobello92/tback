@@ -1,7 +1,7 @@
 export {};
 
 import express from 'express';
-import Prediction from '../models/prediction';
+import Prediction from '../schemas/prediction';
 import {
     map,
     switchMap
@@ -57,6 +57,109 @@ export const executePredictionsCallback = (req: express.Request, res: express.Re
         }, (error: Error) => {
             res.status(500).end();
         });
+}
+
+const sampleTracksByCity = (items: ISumarizingObject[], type: number): ISumarizedObject[] =>
+	items.map((item: ISumarizingObject) =>
+		<ISumarizedObject> {
+            type,
+			cityId: item.cityId,
+			date: Date.parse(new Date().toDateString()),
+			ranges: sampleTracks(item, type)
+		}
+	);
+
+const sampleTracks = (item: ISumarizingObject, type: number): IPredictionSegment[] => {
+    const result: IPredictionSegment[] = [];
+
+    let ranges: IRange[] = [];
+    let accelerometers: IAccelerometer[] = [];
+    let segments: IPredictionSegment[] = [];
+
+    item.tracks.forEach((track: ITrack) => {
+        ranges.push(...track.ranges);
+        accelerometers.push(...track.accelerometers);
+    });
+
+    const firstFilter = discardAccelerometers(accelerometers, type);
+    segments = ranges.map((r: IRange) => {
+        const secondFilter = filterAccelerometersByRange(r, firstFilter, type);
+        return mapToPredictionSegment(r, secondFilter);
+    });
+
+    segments.forEach((s: IPredictionSegment) => {
+        const index = findMatchingSegment(s, result);
+        if (index === -1) {
+            result.push(s);
+        } else {
+            const matching = result.splice(index, 1)[0];
+            const merged = getMergedSegment(s, matching);
+            result.push(merged);
+        }
+    });
+
+    result.forEach((s: IPredictionSegment) => {
+        addEmptySamples(s.samples, TENSOR_SAMPLE_SIZE);
+    });
+
+    return result;
+}
+
+// If a range has ids.length = 0 ==> no anomalies ==> 
+// should have a score of -1 which means "no anomalies"
+// should return a null result which later is casted to a -1 score
+
+//! LUEGO CHEQUEAR QUE LAS CANTIDADES SON 100% COMPLEMENTARIAS Y CORRECTAS
+//! CREO QUE HABIA INCONGRUENCIAS EN LOS LENGTH!!
+//! OJO QUE PUEDE DEBERSE A ALGUNA INCONGRUENCIA EN LOS TRACKS, Y NO EN MI CODIGO
+const filterAccelerometersByRange = (range: IRange, accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
+    const all = accelerometers.filter((a: IAccelerometer) => a.id === range.id);
+    if (type === 0) {
+        return all;
+    } else if (type === 1) {
+        const ids: number[] = range.stabilityEvents.map((e: IStabilityEvent) => e.id);
+        return filterByAnomaly(all, ids);
+    }
+    return undefined;
+}
+
+const filterByAnomaly = (all: IAccelerometer[], ids: number[]): IAccelerometer[] =>
+    all.filter((a: IAccelerometer) => (ids.indexOf(a.eventId) !== -1));
+
+const discardAccelerometers = (accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
+    if (type === 0) {
+        return accelerometers.filter((a: IAccelerometer) => a.eventId === -1)
+    }
+    return accelerometers.filter((a: IAccelerometer) => a.eventId !== -1)
+}
+
+const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
+	const {
+		id,
+		samples,
+		...relevantFields
+	} = matching;
+	return <IPredictionSegment> {
+		...relevantFields,
+		id: [...toAdd.id, ...matching.id],
+		samples: [...toAdd.samples, ...matching.samples]
+	};
+}
+
+// TODO: acá va la lógica para aquellos rangos que no tienen acelerometros asociados
+// (solo va a pasar para prediccion de anomalias)
+const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
+	const {
+		id,
+		speed,
+		stabilityEvents,
+		...relevantFields
+	} = range;
+	return <IPredictionSegment> {
+		...relevantFields,
+		id: [range.id],
+		samples: accelerometers.map((a: IAccelerometer) => getTensorSample(a) as number[][])
+	};
 }
 
 const predictSamplesByCity = (items: ISumarizedObject[], type: number): Observable<ISumarizedObject[]> =>
@@ -125,109 +228,6 @@ const getCommon = (items: number[]): number => {
         count = 0;
     }
     return result;
-}
-
-const sampleTracksByCity = (items: ISumarizingObject[], type: number): ISumarizedObject[] =>
-	items.map((item: ISumarizingObject) =>
-		<ISumarizedObject> {
-            type,
-			cityId: item.cityId,
-			date: Date.parse(new Date().toDateString()),
-			ranges: sampleTracks(item, type)
-		}
-	);
-
-const sampleTracks = (item: ISumarizingObject, type: number): IPredictionSegment[] => {
-	const result: IPredictionSegment[] = [];
-
-	let ranges: IRange[] = [];
-	let accelerometers: IAccelerometer[] = [];
-	let segments: IPredictionSegment[] = [];
-
-	item.tracks.forEach((track: ITrack) => {
-		ranges.push(...track.ranges);
-		accelerometers.push(...track.accelerometers);
-	});
-
-    const firstFilter = discardAccelerometers(accelerometers, type);
-	segments = ranges.map((r: IRange) => {
-        const secondFilter = filterAccelerometersByRange(r, firstFilter, type);
-        return mapToPredictionSegment(r, secondFilter);
-    });
-
-	segments.forEach((s: IPredictionSegment) => {
-		const index = findMatchingSegment(s, result);
-		if (index === -1) {
-			result.push(s);
-		} else {
-			const matching = result.splice(index, 1)[0];
-			const merged = getMergedSegment(s, matching);
-			result.push(merged);
-		}
-	});
-
-	result.forEach((s: IPredictionSegment) => {
-		addEmptySamples(s.samples, TENSOR_SAMPLE_SIZE);
-	});
-
-	return result;
-}
-
-// If a range has ids.length = 0 ==> no anomalies ==> 
-// should have a score of -1 which means "no anomalies"
-// should return a null result which later is casted to a -1 score
-
-//! LUEGO CHEQUEAR QUE LAS CANTIDADES SON 100% COMPLEMENTARIAS Y CORRECTAS
-//! CREO QUE HABIA INCONGRUENCIAS EN LOS LENGTH!!
-//! OJO QUE PUEDE DEBERSE A ALGUNA INCONGRUENCIA EN LOS TRACKS, Y NO EN MI CODIGO
-const filterAccelerometersByRange = (range: IRange, accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
-    const all = accelerometers.filter((a: IAccelerometer) => a.id === range.id);
-    if (type === 0) {
-        return all;
-    } else if (type === 1) {
-        const ids: number[] = range.stabilityEvents.map((e: IStabilityEvent) => e.id);
-        return filterByAnomaly(all, ids);
-    }
-    return undefined;
-}
-
-const filterByAnomaly = (all: IAccelerometer[], ids: number[]): IAccelerometer[] =>
-    all.filter((a: IAccelerometer) => (ids.indexOf(a.eventId) !== -1));
-
-const discardAccelerometers = (accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
-    if (type === 0) {
-        return accelerometers.filter((a: IAccelerometer) => a.eventId === -1)
-    }
-    return accelerometers.filter((a: IAccelerometer) => a.eventId !== -1)
-}
-
-const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
-	const {
-		id,
-		samples,
-		...relevantFields
-	} = matching;
-	return <IPredictionSegment> {
-		...relevantFields,
-		id: [...toAdd.id, ...matching.id],
-		samples: [...toAdd.samples, ...matching.samples]
-	};
-}
-
-// TODO: acá va la lógica para aquellos rangos que no tienen acelerometros asociados
-// (solo va a pasar para prediccion de anomalias)
-const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
-	const {
-		id,
-		speed,
-		stabilityEvents,
-		...relevantFields
-	} = range;
-	return <IPredictionSegment> {
-		...relevantFields,
-		id: [range.id],
-		samples: accelerometers.map((a: IAccelerometer) => getTensorSample(a) as number[][])
-	};
 }
 
 const replacePredictions = (values: any, type: number): Observable<Error | any> =>

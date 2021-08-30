@@ -1,6 +1,6 @@
 export {};
 import express from 'express';
-import Reparation from './../models/reparation';
+import Reparation from '../schemas/reparation';
 
 export const getReparationsCallback = (req: express.Request, res: express.Response): void => {
     const filter = {

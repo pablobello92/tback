@@ -1,6 +1,6 @@
 export {};
 import express from 'express';
-import Sumarization from '../models/sumarization';
+import Sumarization from '../schemas/sumarization';
 import {
     map,
     switchMap

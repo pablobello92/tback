@@ -1,7 +1,7 @@
 export {};
 
 import express from 'express';
-import Track from './../models/track';
+import Track from '../schemas/track';
 
 import {
 	getCenter,
