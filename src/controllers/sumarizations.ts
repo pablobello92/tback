@@ -41,7 +41,7 @@ export const getSumarizationsCallback = (req: express.Request, res: express.Resp
 }
 
 const getSumarizationsByFilter = (filter: {}): Promise<Error | any> =>
-    Sumarization.find(filter).lean()
+    Sumarization.findOne(filter).lean()
         .catch((error: any) => new Error(error));
 
 export const executeSumarizationCallback = (req: express.Request, res: express.Response): void => {

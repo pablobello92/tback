@@ -28,7 +28,6 @@ export interface IBaseSegment {
 export interface ISegment extends IBaseSegment {
     date: number;
     score: number;
-    distance: number;
 }
 
 export interface IRange extends ISegment {

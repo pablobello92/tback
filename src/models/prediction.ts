@@ -21,8 +21,7 @@ const prediction = new Schema({
             lng: Number
         },
         date: Number,
-        score: Number,
-        distance: Number
+        score: Number
     }]
 });
 

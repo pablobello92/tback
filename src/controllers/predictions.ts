@@ -81,7 +81,6 @@ const addScores = (model: LayersModel, item: ISumarizedObject): ISumarizedObject
                 start: r.start,
                 end: r.end,
                 date: r.date,
-                distance: r.distance,
                 score: calculateScore(r.samples, item.type, model)
             }
         )

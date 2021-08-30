@@ -32,8 +32,7 @@ const trackSchema = new Schema({
             zavg: Number,
             score: Number,
             duration: Number
-        }],
-        distance: Number
+        }]
     }],
     accelerometers: [{
         id: Number,

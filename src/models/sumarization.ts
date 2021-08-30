@@ -21,7 +21,6 @@ const sumarizationSchema = new Schema({
             lng: Number
         },
         score: Number,
-        distance: Number,
         accuracy: Number
     }],
 });

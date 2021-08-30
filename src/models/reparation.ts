@@ -7,8 +7,8 @@ import {
 
 const reparationSchema = new Schema({
     _id: Schema.Types.ObjectId,
-    startTime: Number,
     cityId: Number,
+    date: Number,
     from: {
         lat: Number,
         lng: Number
