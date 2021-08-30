@@ -5,6 +5,7 @@ import Reparation from './../models/reparation';
 export const getReparationsCallback = (req: express.Request, res: express.Response): void => {
     const filter = {
         cityId: parseInt(req.query.cityId.toString())
+        // TODO: add startTime filter!
     };
     Reparation.find(filter)
         .then((result: any) => {

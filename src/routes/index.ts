@@ -9,7 +9,7 @@ import { getCitiesCallback } from '../controllers/cities';
 import { getTracksCallback } from '../controllers/tracks';
 import { getSumarizationsCallback, executeSumarizationCallback } from '../controllers/sumarizations';
 import { getReparationsCallback, putReparationCallback } from'../controllers/reparations';
-import { executePredictionsCallback } from '../controllers/predictions';
+import { getPredictionsCallback, executePredictionsCallback } from '../controllers/predictions';
 
 api.get('/', indexCallback);
 api.post('/api/login', loginCallBack);
@@ -21,6 +21,7 @@ api.get('/api/sumarizations/get', getSumarizationsCallback);
 api.post('/api/sumarizations', executeSumarizationCallback);
 api.get('/api/reparations', getReparationsCallback);
 api.put('/api/reparations/insert', putReparationCallback);
+api.get('/api/predictions/get', getPredictionsCallback);
 api.post('/api/predictions', executePredictionsCallback);
 api.get('*', notFoundCallback);
 

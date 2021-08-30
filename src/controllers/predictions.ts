@@ -1,7 +1,7 @@
 export {};
 
 import express from 'express';
-import PredictedRoadTypes from '../models/prediction';
+import Prediction from '../models/prediction';
 import {
     map,
     switchMap
@@ -237,11 +237,11 @@ const replacePredictions = (values: any, type: number): Observable<Error | any> 
     );
 
 const removePredictions = (filter: {}): Promise<Error | any> =>
-    PredictedRoadTypes.deleteMany(filter)
+    Prediction.deleteMany(filter)
         .catch((error: any) => new Error(error));
 
 const insertPredictions = (values: any): Promise<Error | any> =>
-    PredictedRoadTypes.insertMany(values)
+    Prediction.insertMany(values)
         .catch((error: any) => new Error(error));
 
 export const getTensorSample = (a?: IAccelerometer): TensorSample =>
@@ -268,3 +268,25 @@ export const addEmptySamples = (samples: TensorSample[], n: number): void => {
         samples.push(getTensorSample(null));
     }
 }
+
+
+export const getPredictionsCallback = (req: express.Request, res: express.Response): void => {
+    const filter = {
+        type: req.query.type,
+        cityId: req.query.cityId
+    };
+    getPredictionsByFilter(filter)
+        .then((result: any) => {
+            res.send(result);
+        })
+        .catch((error: Error) => {
+            res.send(error);
+        })
+        .finally(() => {
+            res.end();
+        });
+}
+
+const getPredictionsByFilter = (filter: {}): Promise<Error | any> =>
+    Prediction.findOne(filter).lean()
+        .catch((error: any) => new Error(error));
