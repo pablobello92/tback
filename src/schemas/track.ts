@@ -4,7 +4,9 @@ import {
     Schema,
     model
 } from 'mongoose';
-import { iDelta } from './subschemas/delta';
+import { 
+    iDelta
+} from './subschemas/delta';
 import { 
     iRange
 } from './subschemas/range';

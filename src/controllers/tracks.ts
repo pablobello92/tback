@@ -20,13 +20,7 @@ import {
 	mergeMap
 } from 'rxjs/operators';
 import {
-	IAccelerometer,
-	IBaseSegment,
-	ISumarizationSegment,
-	ISumarizedObject,
-	ISumarizingObject,
-	ITrack,
-	IRange
+	IBaseSegment
 } from '../interfaces/Tracks';
 
 export const getTracksCallback = (req: express.Request, res: express.Response): void => {
@@ -53,23 +47,20 @@ export const getTracksCallback = (req: express.Request, res: express.Response): 
     });
 }
 
-//? ----------------------------------------------------
-//? FUNCIONALIDAD COMPARTIDA ENTRE SUMARIZACION Y PREDICCION
-//? ----------------------------------------------------
-
-// TODO: Remove LIMIT = 2
+// TODO: Remove LIMIT = 3
 // !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
 // !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
-export const getTracksMapByCity = (filter: {}, fields: string): Observable < any > =>
+export const getTracksMappedByCity = (filter: {}, fields: string): Observable < any > =>
 	from(fetchCityFields(filter, 'id'))
-		.pipe(
-			mergeMap((cityIds: number[]) => {
-				const observables = cityIds.map((cityId: number) =>
-					getTracksMappingByCity(cityId, fields, 0, 2)
-				);
-				return forkJoin(observables);
-			})
-		);
+	.pipe(
+		map((result: any[]) => result.map((res: any) => res.id)),
+		mergeMap((cityIds: number[]) => {
+			const observables = cityIds.map((cityId: number) =>
+				getTracksMappingByCity(cityId, fields, 0, 3)
+			);
+			return forkJoin(observables);
+		})
+	);
 
 const getTracksMappingByCity = (cityId: number, fields: string, skip: number, limit: number): Observable < any > =>
 	from(fetchTracks({ cityId }, fields, skip, limit))
@@ -83,10 +74,9 @@ const getTracksMappingByCity = (cityId: number, fields: string, skip: number, li
 			})
 		);
 
-const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<Error | any[]> => {
-	return Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec()
+const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<Error | any[]> =>
+	Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec()
 		.catch((error: any) => new Error(error));
-}
 
 export const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
     array.findIndex((s: IBaseSegment) => matches(mySegment, s));

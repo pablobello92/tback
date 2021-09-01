@@ -8,7 +8,6 @@ import {
     iRange
 } from './subschemas/range';
 
-
 const prediction = new Schema({
     _id: Schema.Types.ObjectId,
     cityId: Number,

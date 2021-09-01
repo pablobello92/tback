@@ -10,6 +10,7 @@ import {
 
 const sumarizationSchema = new Schema({
     _id: Schema.Types.ObjectId,
+    type: Number,
     cityId: Number,
     date: Number,
     ranges: [iRange],

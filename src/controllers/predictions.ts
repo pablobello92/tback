@@ -20,8 +20,11 @@ import {
 } from '@tensorflow/tfjs-node';
 import {
     findMatchingSegment,
-    getTracksMapByCity
+    getTracksMappedByCity
 } from './tracks';
+import { 
+    replaceSumarizations
+} from './sumarizations';
 import {
     IAccelerometer,
     IRange,
@@ -45,12 +48,11 @@ export const executePredictionsCallback = (req: express.Request, res: express.Re
     const filter: any = {
         id: req.body.linkedCities
     };
-
-    getTracksMapByCity(filter, 'cityId startTime ranges accelerometers')
+    getTracksMappedByCity(filter, 'cityId startTime ranges accelerometers')
         .pipe(
-            map((allData: ISumarizingObject[]) => sampleTracksByCity(allData, type)),
-            switchMap((allData: ISumarizedObject[]) => predictSamplesByCity(allData, type)),
-            switchMap((predictionsByCity: ISumarizedObject[]) => replacePredictions(predictionsByCity, type))
+            map((tracksByCity: ISumarizingObject[]) => mapTracksToTensor(tracksByCity, type)),
+            switchMap((tensorsByCity: ISumarizedObject[]) => mapTensorToPrediction(tensorsByCity, type)),
+            switchMap((predictionsByCity: ISumarizedObject[]) => replaceSumarizations(predictionsByCity, type))
         )
         .subscribe((result: any) => {
             res.status(200).end();
@@ -59,32 +61,22 @@ export const executePredictionsCallback = (req: express.Request, res: express.Re
         });
 }
 
-const sampleTracksByCity = (items: ISumarizingObject[], type: number): ISumarizedObject[] =>
-	items.map((item: ISumarizingObject) =>
+const mapTracksToTensor = (tracksByCity: ISumarizingObject[], type: number): ISumarizedObject[] =>
+    tracksByCity.map((item: ISumarizingObject) =>
 		<ISumarizedObject> {
             type,
 			cityId: item.cityId,
 			date: Date.parse(new Date().toDateString()),
-			ranges: sampleTracks(item, type)
+			ranges: mapTracksToMergedPredictionSegments(item.tracks, type)
 		}
 	);
 
-const sampleTracks = (item: ISumarizingObject, type: number): IPredictionSegment[] => {
-    const result: IPredictionSegment[] = [];
-
-    let ranges: IRange[] = [];
-    let accelerometers: IAccelerometer[] = [];
+const mapTracksToMergedPredictionSegments = (tracks: ITrack[], type: number): IPredictionSegment[] => {
     let segments: IPredictionSegment[] = [];
+    let result: IPredictionSegment[] = [];
 
-    item.tracks.forEach((track: ITrack) => {
-        ranges.push(...track.ranges);
-        accelerometers.push(...track.accelerometers);
-    });
-
-    const firstFilter = discardAccelerometers(accelerometers, type);
-    segments = ranges.map((r: IRange) => {
-        const secondFilter = filterAccelerometersByRange(r, firstFilter, type);
-        return mapToPredictionSegment(r, secondFilter);
+    tracks.forEach((t: ITrack) => {
+        segments.push(...getPredictionSegmentsFromTrack(t, type));
     });
 
     segments.forEach((s: IPredictionSegment) => {
@@ -105,26 +97,24 @@ const sampleTracks = (item: ISumarizingObject, type: number): IPredictionSegment
     return result;
 }
 
-// If a range has ids.length = 0 ==> no anomalies ==> 
-// should have a score of -1 which means "no anomalies"
-// should return a null result which later is casted to a -1 score
-
-//! LUEGO CHEQUEAR QUE LAS CANTIDADES SON 100% COMPLEMENTARIAS Y CORRECTAS
-//! CREO QUE HABIA INCONGRUENCIAS EN LOS LENGTH!!
-//! OJO QUE PUEDE DEBERSE A ALGUNA INCONGRUENCIA EN LOS TRACKS, Y NO EN MI CODIGO
-const filterAccelerometersByRange = (range: IRange, accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
-    const all = accelerometers.filter((a: IAccelerometer) => a.id === range.id);
-    if (type === 0) {
-        return all;
-    } else if (type === 1) {
-        const ids: number[] = range.stabilityEvents.map((e: IStabilityEvent) => e.id);
-        return filterByAnomaly(all, ids);
-    }
-    return undefined;
+const getPredictionSegmentsFromTrack = (track: ITrack, type: number): IPredictionSegment[] => {
+    const firstFilter = discardAccelerometers(track.accelerometers, type);
+    return track.ranges.map((r: IRange, i) => {
+        const secondFilter = filterAccelerometersByRange(r, firstFilter, type);
+        return mapToPredictionSegment(r, secondFilter);
+    });
 }
 
-const filterByAnomaly = (all: IAccelerometer[], ids: number[]): IAccelerometer[] =>
-    all.filter((a: IAccelerometer) => (ids.indexOf(a.eventId) !== -1));
+const filterAccelerometersByRange = (range: IRange, accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {  
+    if (type === 0) {
+        return accelerometers.filter((a: IAccelerometer) => a.id === range.id);
+    } else if (type === 1) {
+        const ids: number[] = range.stabilityEvents.map((e: IStabilityEvent) => e.id);
+        return accelerometers.filter((a: IAccelerometer) => (ids.indexOf(a.eventId) !== -1));
+    } else {
+        return [];
+    }
+}
 
 const discardAccelerometers = (accelerometers: IAccelerometer[], type: number): IAccelerometer[] => {
     if (type === 0) {
@@ -146,8 +136,6 @@ const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegmen
 	};
 }
 
-// TODO: acá va la lógica para aquellos rangos que no tienen acelerometros asociados
-// (solo va a pasar para prediccion de anomalias)
 const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
 	const {
 		id,
@@ -162,12 +150,10 @@ const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[])
 	};
 }
 
-const predictSamplesByCity = (items: ISumarizedObject[], type: number): Observable<ISumarizedObject[]> =>
+const mapTensorToPrediction = (items: ISumarizedObject[], type: number): Observable<ISumarizedObject[]> =>
     from(loadModel(PATHS[type]))
     .pipe(
-        map((model: LayersModel) => {
-            return items.map((item: ISumarizedObject) => addScores(model, item))
-        })
+        map((model: LayersModel) => items.map((item: ISumarizedObject) => addScores(model, item)))
     )
 
 const loadModel = (path: string): Promise<LayersModel | Error> =>
@@ -198,7 +184,7 @@ const calculateScore = (samples: TensorSample[], type: number, model: LayersMode
         const score = getPredominantType(predictionResult);
         scores.push(score);
     }
-    return getCommon(scores);
+    return getMostCommonValue(scores);
 }
 
 const predictSample = (sample: any, model: LayersModel): any => {
@@ -207,42 +193,28 @@ const predictSample = (sample: any, model: LayersModel): any => {
     return result.dataSync();
 }
 
-// TODO: check the undefined cases!!!
 const getPredominantType = (array: Float32Array): number => {
     return array.indexOf(Math.max(...array));
 }
 
-const getCommon = (items: number[]): number => {
+const getMostCommonValue = (items: number[]): number => {
     let count = 0;
     let higherCount = 1;
-    let result: number;
+    let result: number = items[0];
     for (let i = 0; i < items.length; i++) {
         for (let j = i; j < items.length; j++) {
-            if (items[i] == items[j])
+            if (items[i] == items[j]) {
                 count++;
                 if (higherCount < count) {
                     higherCount = count; 
                     result = items[i];
                 }
+            }       
         }
         count = 0;
     }
     return result;
 }
-
-const replacePredictions = (values: any, type: number): Observable<Error | any> =>
-    from(removePredictions({ type }))
-    .pipe(
-        switchMap((res: any) => insertPredictions(values))
-    );
-
-const removePredictions = (filter: {}): Promise<Error | any> =>
-    Prediction.deleteMany(filter)
-        .catch((error: any) => new Error(error));
-
-const insertPredictions = (values: any): Promise<Error | any> =>
-    Prediction.insertMany(values)
-        .catch((error: any) => new Error(error));
 
 export const getTensorSample = (a?: IAccelerometer): TensorSample =>
     (a !== null) ? [
