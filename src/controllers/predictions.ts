@@ -240,25 +240,3 @@ export const addEmptySamples = (samples: TensorSample[], n: number): void => {
         samples.push(getTensorSample(null));
     }
 }
-
-
-export const getPredictionsCallback = (req: express.Request, res: express.Response): void => {
-    const filter = {
-        type: req.query.type,
-        cityId: req.query.cityId
-    };
-    getPredictionsByFilter(filter)
-        .then((result: any) => {
-            res.send(result);
-        })
-        .catch((error: Error) => {
-            res.send(error);
-        })
-        .finally(() => {
-            res.end();
-        });
-}
-
-const getPredictionsByFilter = (filter: {}): Promise<Error | any> =>
-    Prediction.findOne(filter).lean()
-        .catch((error: any) => new Error(error));
