@@ -16,5 +16,12 @@ export const getCitiesCallback = (req: express.Request, res: express.Response): 
 };
 
 export const fetchCityFields = (filter?: {}, fields?: string): Promise<Error | any[]> =>
-    City.find(filter).lean().select(fields)
+    City.find(filter, fields).lean()
+        .then((res: any[]) => {
+            const mapped = res.map((item: any) => {
+                const { _id, ...relevantFields} = item;
+                return relevantFields;
+            });
+            return mapped;
+        })
         .catch((error: any) => new Error(error));
