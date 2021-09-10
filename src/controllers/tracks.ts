@@ -20,7 +20,8 @@ import {
 	mergeMap
 } from 'rxjs/operators';
 import {
-	IBaseSegment
+	IBaseSegment,
+	ISumarizingObject
 } from '../interfaces/Tracks';
 
 export const getTracksCallback = (req: express.Request, res: express.Response): void => {
@@ -50,7 +51,7 @@ export const getTracksCallback = (req: express.Request, res: express.Response): 
 // TODO: Remove LIMIT = 3
 // !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
 // !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
-export const getTracksMappedByCity = (filter: {}, fields: string): Observable < any > =>
+export const getTracksMappedByCity = (filter: {}, fields: string): Observable <ISumarizingObject[]> =>
 	from(fetchCityFields(filter, 'id'))
 	.pipe(
 		map((result: any[]) => result.map((res: any) => res.id)),

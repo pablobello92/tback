@@ -1,7 +1,5 @@
 export {};
 import express from 'express';
-const api = express.Router();
-
 import { indexCallback, notFoundCallback } from '../controllers/index';
 import { loginCallBack } from '../controllers/login';
 import { getUserCallback, updateUserCallback } from '../controllers/users';
@@ -10,6 +8,8 @@ import { getTracksCallback } from '../controllers/tracks';
 import { getSumarizationsCallback, executeSumarizationCallback } from '../controllers/sumarizations';
 import { getReparationsCallback, putReparationCallback } from'../controllers/reparations';
 import { executePredictionsCallback } from '../controllers/predictions';
+
+const api = express.Router();
 
 api.get('/', indexCallback);
 api.post('/api/login', loginCallBack);

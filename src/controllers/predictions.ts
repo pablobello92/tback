@@ -40,28 +40,51 @@ import {
 } from '../interfaces/Predictions';
 import { 
     PATHS,
+    PREDICTION_TYPES,
     TENSOR_SAMPLE_SIZE
 } from '../shared/constants';
 
 export const executePredictionsCallback = (req: express.Request, res: express.Response): void => {
-    const type: number = parseInt(req.body.type);
+    const type: PREDICTION_TYPES = parseInt(req.body.type);
     const filter: any = {
         id: req.body.linkedCities
     };
     getTracksMappedByCity(filter, 'cityId startTime ranges accelerometers')
         .pipe(
-            map((tracksByCity: ISumarizingObject[]) => mapTracksToTensor(tracksByCity, type)),
-            switchMap((tensorsByCity: ISumarizedObject[]) => mapTensorToPrediction(tensorsByCity, type)),
-            switchMap((predictionsByCity: ISumarizedObject[]) => replaceSumarizations(predictionsByCity, type))
+            applyTransformation(type)
         )
         .subscribe((result: any) => {
+            console.log(result)
             res.status(200).end();
         }, (error: Error) => {
             res.status(500).end();
         });
 }
 
-const mapTracksToTensor = (tracksByCity: ISumarizingObject[], type: number): ISumarizedObject[] =>
+const applyTransformation = (type: number) => <T>(source$: Observable<T>) => {
+    const transformation = (type === PREDICTION_TYPES.ROADS) ? roads : anomalies;
+    return source$.pipe(transformation(type));
+}
+
+const roads = (type: number) => <T>(source$: Observable<T>) => source$
+    .pipe(
+        map((tracksByCity: T) => tracksByCity as unknown as ISumarizingObject[]),
+        map((tracksByCity: ISumarizingObject[]) => mapTracksToTensor(tracksByCity, type)),
+        switchMap((tensorsByCity: ISumarizedObject[]) => mapTensorToPrediction(tensorsByCity, type)),
+        // switchMap((predictionsByCity: ISumarizedObject[]) => replaceSumarizations(predictionsByCity, type)),
+        map((tensorsByCity: ISumarizedObject[]) => 'FINALIZO ROADS!!')
+    );
+
+const anomalies = (type: number) => <T>(source$: Observable<T>) => source$
+    .pipe(
+        map((tracksByCity: T) => tracksByCity as unknown as ISumarizingObject[]),
+        map((tracksByCity: ISumarizingObject[]) => mapTracksToTensor(tracksByCity, type)),
+        map((tensorsByCity: ISumarizedObject[]) => 'FINALIZO ANOMALIAS!!')
+    );
+
+
+
+const mapTracksToTensor = (tracksByCity: ISumarizingObject[], type: number): any =>
     tracksByCity.map((item: ISumarizingObject) =>
 		<ISumarizedObject> {
             type,
@@ -71,10 +94,13 @@ const mapTracksToTensor = (tracksByCity: ISumarizingObject[], type: number): ISu
 		}
 	);
 
+// si type == 1 ===> primero predict()luego sumarizar predicciones 
 const mapTracksToMergedPredictionSegments = (tracks: ITrack[], type: number): IPredictionSegment[] => {
     let segments: IPredictionSegment[] = [];
     let result: IPredictionSegment[] = [];
 
+    console.clear();
+    console.log('PREDICCION: ', type);
     tracks.forEach((t: ITrack) => {
         segments.push(...getPredictionSegmentsFromTrack(t, type));
     });
