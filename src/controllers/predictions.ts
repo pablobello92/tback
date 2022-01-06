@@ -66,33 +66,52 @@ const applyTransformation = (type: number) => <T>(source$: Observable<T>) => {
     return source$.pipe(transformation(type));
 }
 
-const roads = (type: number) => <T>(source$: Observable<T>) => source$
-    .pipe(
-        map((tracksByCity: T) => tracksByCity as unknown as ISumarizingObject[]),
-        map((tracksByCity: ISumarizingObject[]) => mapTracksToTensor(tracksByCity, type)),
-        switchMap((tensorsByCity: ISumarizedObject[]) => mapTensorToPrediction(tensorsByCity, type)),
-        // switchMap((predictionsByCity: ISumarizedObject[]) => replaceSumarizations(predictionsByCity, type)),
-        map((tensorsByCity: ISumarizedObject[]) => 'FINALIZO ROADS!!')
-    );
-
 const anomalies = (type: number) => <T>(source$: Observable<T>) => source$
     .pipe(
         map((tracksByCity: T) => tracksByCity as unknown as ISumarizingObject[]),
-        map((tracksByCity: ISumarizingObject[]) => mapTracksToTensor(tracksByCity, type)),
+        map((tracksByCity: ISumarizingObject[]) => firstMappingAnomalies(tracksByCity, type)),
+        // switchMap((tensorsByCity: ISumarizedObject[]) => mapTensorToPrediction(tensorsByCity, type)),
+        // switchMap((predictionsByCity: ISumarizedObject[]) => replaceSumarizations(predictionsByCity, type)),
         map((tensorsByCity: ISumarizedObject[]) => 'FINALIZO ANOMALIAS!!')
     );
 
-
-
-const mapTracksToTensor = (tracksByCity: ISumarizingObject[], type: number): any =>
+const firstMappingAnomalies = (tracksByCity: ISumarizingObject[], type: number): ISumarizedObject[] =>
     tracksByCity.map((item: ISumarizingObject) =>
 		<ISumarizedObject> {
             type,
 			cityId: item.cityId,
 			date: Date.parse(new Date().toDateString()),
-			ranges: mapTracksToMergedPredictionSegments(item.tracks, type)
+			ranges: foo(item.tracks, type)
 		}
 	);
+
+const foo = (tracks: ITrack[], type: number): IPredictionSegment[] => {
+    let segments: IPredictionSegment[] = [];
+    let result: IPredictionSegment[] = [];
+
+    console.clear();
+    console.log('PREDICCION: ', type);
+    tracks.forEach((t: ITrack) => {
+        segments.push(...getPredictionSegmentsFromTrack(t, type));
+    });
+
+    segments.forEach((s: IPredictionSegment) => {
+        const index = findMatchingSegment(s, result);
+        if (index === -1) {
+            result.push(s);
+        } else {
+            const matching = result.splice(index, 1)[0];
+            const merged = getMergedSegment(s, matching);
+            result.push(merged);
+        }
+    });
+
+    result.forEach((s: IPredictionSegment) => {
+        addEmptySamples(s.samples, TENSOR_SAMPLE_SIZE);
+    });
+
+    return result;
+}
 
 // si type == 1 ===> primero predict()luego sumarizar predicciones 
 const mapTracksToMergedPredictionSegments = (tracks: ITrack[], type: number): IPredictionSegment[] => {
@@ -266,3 +285,23 @@ export const addEmptySamples = (samples: TensorSample[], n: number): void => {
         samples.push(getTensorSample(null));
     }
 }
+
+
+const roads = (type: number) => <T>(source$: Observable<T>) => source$
+    .pipe(
+        map((tracksByCity: T) => tracksByCity as unknown as ISumarizingObject[]),
+        map((tracksByCity: ISumarizingObject[]) => firstMappingRoads(tracksByCity, type)),
+        switchMap((tensorsByCity: ISumarizedObject[]) => mapTensorToPrediction(tensorsByCity, type)),
+        // switchMap((predictionsByCity: ISumarizedObject[]) => replaceSumarizations(predictionsByCity, type)),
+        map((tensorsByCity: ISumarizedObject[]) => 'FINALIZO ROADS!!')
+    );
+
+const firstMappingRoads = (tracksByCity: ISumarizingObject[], type: number): ISumarizedObject[] =>
+    tracksByCity.map((item: ISumarizingObject) =>
+		<ISumarizedObject> {
+            type,
+			cityId: item.cityId,
+			date: Date.parse(new Date().toDateString()),
+			ranges: mapTracksToMergedPredictionSegments(item.tracks, type)
+		}
+	);
