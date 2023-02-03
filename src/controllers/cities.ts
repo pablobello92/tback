@@ -1,9 +1,9 @@
 export {};
 import express from 'express';
-import City from './../models/city';
+import City from '../schemas/city';
 
 export const getCitiesCallback = (req: express.Request, res: express.Response): void => {
-    fetchCityFields()
+    fetchCityFields({})
     .then((result: any[]) => {
         res.send(result);
     })
@@ -15,7 +15,13 @@ export const getCitiesCallback = (req: express.Request, res: express.Response): 
     });
 };
 
-export const fetchCityFields = (fields?: string): Promise<Error | any[]> =>
-    City.find().lean().select(fields)
-        .then((result: any[]) => result.map(((item: any) => item.id)))
+export const fetchCityFields = (filter?: {}, fields?: string): Promise<Error | any[]> =>
+    City.find(filter, fields).lean()
+        .then((res: any[]) => {
+            const mapped = res.map((item: any) => {
+                const { _id, ...relevantFields} = item;
+                return relevantFields;
+            });
+            return mapped;
+        })
         .catch((error: any) => new Error(error));

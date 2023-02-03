@@ -1,7 +1,7 @@
 export {};
 
 import express from 'express';
-import Track from './../models/track';
+import Track from '../schemas/track';
 
 import {
 	getCenter,
@@ -20,18 +20,9 @@ import {
 	mergeMap
 } from 'rxjs/operators';
 import {
-	IAccelerometer,
 	IBaseSegment,
-	ISumarizationSegment,
-	ISumarizedObject,
-	ISumarizingObject,
-	ITrack,
-	IRange,
-	IPredictionSegment
-} from '../interfaces/Track';
-import { 
-	getTensorSample
-} from './predictions';
+	ISumarizingObject
+} from '../interfaces/Tracks';
 
 export const getTracksCallback = (req: express.Request, res: express.Response): void => {
 	const filter = {
@@ -57,23 +48,20 @@ export const getTracksCallback = (req: express.Request, res: express.Response): 
     });
 }
 
-//? ----------------------------------------------------
-//? FUNCIONALIDAD COMPARTIDA ENTRE SUMARIZACION Y PREDICCION
-//? ----------------------------------------------------
-
-// TODO: Remove LIMIT = 2
+// TODO: Remove LIMIT = 3
 // !CUIDADO: SI SACO EL LIMIT ME TIRA ERROR: HEAP OUT OF MEMORY
 // !GOOGLEAR EL PROBLEMA Y SOLUCIONARLO
-export const getTracksMapByCity = (fields: string): Observable < any > =>
-	from(fetchCityFields('id'))
-		.pipe(
-			mergeMap((cityIds: number[]) => {
-				const observables = cityIds.map((cityId: number) =>
-					getTracksMappingByCity(cityId, fields, 0, 2)
-				);
-				return forkJoin(observables);
-			})
-		);
+export const getTracksMappedByCity = (filter: {}, fields: string): Observable <ISumarizingObject[]> =>
+	from(fetchCityFields(filter, 'id'))
+	.pipe(
+		map((result: any[]) => result.map((res: any) => res.id)),
+		mergeMap((cityIds: number[]) => {
+			const observables = cityIds.map((cityId: number) =>
+				getTracksMappingByCity(cityId, fields, 0, 3)
+			);
+			return forkJoin(observables);
+		})
+	);
 
 const getTracksMappingByCity = (cityId: number, fields: string, skip: number, limit: number): Observable < any > =>
 	from(fetchTracks({ cityId }, fields, skip, limit))
@@ -87,171 +75,20 @@ const getTracksMappingByCity = (cityId: number, fields: string, skip: number, li
 			})
 		);
 
-const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<Error | any[]> => {
-	return Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec()
+const fetchTracks = (filter: {} = {}, fields: string, skip: number, limit: number): Promise<Error | any[]> =>
+	Track.find(filter).lean().select(fields).skip(skip).limit(limit).exec()
 		.catch((error: any) => new Error(error));
-}
 
-const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
-	array.findIndex((s: IBaseSegment) => matches(mySegment, s));
+export const findMatchingSegment = (mySegment: IBaseSegment, array: IBaseSegment[]): number =>
+    array.findIndex((s: IBaseSegment) => matches(mySegment, s));
 
 const matches = (a: IBaseSegment, b: IBaseSegment): boolean => {
-	const center: any = getCenter([a.start, a.end]);
-	const length: number = getDistance(b.start, b.end);
-	const distanceToStart: number = getDistance(b.start, center);
-	const distanceToEnd: number = getDistance(b.end, center);
-	return (
-		distanceToStart < length &&
-		distanceToEnd < length
-	);
+    const center: any = getCenter([a.start, a.end]);
+    const length: number = getDistance(b.start, b.end);
+    const distanceToStart: number = getDistance(b.start, center);
+    const distanceToEnd: number = getDistance(b.end, center);
+    return (
+        distanceToStart < length &&
+        distanceToEnd < length
+    );
 }
-
-/**
- * ? -----------------
- * ? SUMARIZACION
- * ? -----------------
- */
-
-export const sumarizeTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
-	items.map((item: ISumarizingObject) => sumarizeTracks(item));
-
-const sumarizeTracks = (item: ISumarizingObject): ISumarizedObject => {
-	const date = Date.parse(new Date().toDateString());
-	const sumarizedSegments: ISumarizationSegment[] = [];
-
-	item.tracks.forEach((track: ITrack) => {
-		sumarizeNextTrack(sumarizedSegments, track);
-	});
-
-	return <ISumarizedObject> {
-		cityId: item.cityId,
-		date,
-		ranges: sumarizedSegments
-	};
-}
-
-const sumarizeNextTrack = (array: ISumarizationSegment[], track: ITrack): void => {
-	let ranges: IRange[] = track.ranges;
-	let segments: ISumarizationSegment[] = [];
-
-	segments = ranges.map((r: IRange) => mapRangeToSumarizingSegment(r));
-
-	segments.forEach((s: ISumarizationSegment) => {
-		const toPush = addSumarizingSegment(s, array);
-		array.push(toPush);
-	});
-}
-
-const mapRangeToSumarizingSegment = (range: IRange): ISumarizationSegment => {
-	const {
-		speed,
-		stabilityEvents,
-		...relevantFields
-	} = range;
-	return <ISumarizationSegment > {
-		...relevantFields,
-		accuracy: 1
-	};
-}
-
-const addSumarizingSegment = (toAdd: ISumarizationSegment, array: ISumarizationSegment[]): ISumarizationSegment => {
-	const index = findMatchingSegment(toAdd, array);
-	if (index === -1) {
-		return toAdd;
-	} else {
-		const matching = array.splice(index, 1)[0];
-		const merged = getMergedSumarizingSegment(toAdd, matching);
-		return merged;
-	}
-}
-
-// TODO: Refactorizar esto... deberia ir en un archivo aparte de configuracion o de constantes
-// TODO: Agregar funcion que calcule peso de forma dinamica haciendo una resta entre
-// TODO: Date() y el date del segmento
-// TODO: estoy dando por hecho que el nuevo tiene fecha mas reciente...
-// TODO: comparar fechas y ahi decido cual es el new y el old
-
-const NEW_DATA_WEIGHT = 0.6;
-const OLD_DATA_WEIGHT = 1 - NEW_DATA_WEIGHT;
-
-const getMergedSumarizingSegment = (toAdd: ISumarizationSegment, matching: ISumarizationSegment): ISumarizationSegment => {
-	matching.score = matching.score * OLD_DATA_WEIGHT + toAdd.score * NEW_DATA_WEIGHT;
-	matching.date = toAdd.date;
-	matching.accuracy++;
-	return matching;
-}
-
-/**
- * ? -----------------
- * ? PREDICCION
- * ? -----------------
- */
-
-export const sampleTracksByCity = (items: ISumarizingObject[]): ISumarizedObject[] =>
-	items.map((item: ISumarizingObject) =>
-		<ISumarizedObject> {
-			cityId: item.cityId,
-			date: Date.parse(new Date().toDateString()),
-			ranges: sampleTracks(item)
-		}
-	);
-
-const sampleTracks = (item: ISumarizingObject): IPredictionSegment[] => {
-	const result: IPredictionSegment[] = [];
-
-	let ranges: IRange[] = [];
-	let accelerometers: IAccelerometer[] = [];
-	let segments: IPredictionSegment[] = [];
-
-	item.tracks.forEach((track: ITrack) => {
-		ranges.push(...track.ranges);
-		accelerometers.push(...track.accelerometers);
-	});
-
-	segments = ranges.map((r: IRange) => mapToPredictionSegment(r, accelerometers));
-
-	segments.forEach((s: IPredictionSegment) => {
-		const index = findMatchingSegment(s, result);
-		if (index === -1) {
-			result.push(s);
-		} else {
-			const matching = result.splice(index, 1)[0];
-			const merged = getMergedSegment(s, matching);
-			result.push(merged);
-		}
-	});
-
-	return result;
-}
-
-const getMergedSegment = (toAdd: IPredictionSegment, matching: IPredictionSegment): IPredictionSegment => {
-	const {
-		id,
-		samples,
-		...relevantFields
-	} = matching;
-	return <IPredictionSegment> {
-		...relevantFields,
-		id: [...toAdd.id, ...matching.id],
-		samples: [...toAdd.samples, ...matching.samples]
-	};
-}
-
-const mapToPredictionSegment = (range: IRange, accelerometers: IAccelerometer[]): IPredictionSegment => {
-	const {
-		id,
-		speed,
-		stabilityEvents,
-		...relevantFields
-	} = range;
-	return <IPredictionSegment> {
-		...relevantFields,
-		id: [range.id],
-		samples: getSamples(range.id, accelerometers)
-	};
-}
-
-const getSamples = (id: number, accelerometers: IAccelerometer[]): number[][][] =>
-	accelerometers
-		.filter((a: IAccelerometer) => a.id === id)
-		.map((a: IAccelerometer) => getTensorSample(a));
