@@ -1,6 +1,6 @@
 export {};
 import express from 'express';
-import User from './../models/user';
+import User from '../schemas/user';
 
 export const getUserCallback = (req: express.Request, res: express.Response): void => {
     getUser({ username: req.query.username })

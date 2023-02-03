@@ -9,9 +9,7 @@ const userSchema = new Schema({
     _id: Schema.Types.ObjectId,
     id: Number,
     level: Number,
-    linkedCities: [{
-        id: Number
-    }],
+    linkedCities: [Number],
     username: String,
     password: String,
     nickname: String,

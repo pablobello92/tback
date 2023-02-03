@@ -4,7 +4,7 @@ interface Axis {
     diff: number;
 }
 
-interface StabilityEvent {
+export interface IStabilityEvent {
     id: number;
     startTime: number;
     endTime: number;
@@ -28,24 +28,16 @@ export interface IBaseSegment {
 export interface ISegment extends IBaseSegment {
     date: number;
     score: number;
-    distance: number;
 }
 
 export interface IRange extends ISegment {
     id: number;
     speed: number;
-    stabilityEvents: StabilityEvent[];
+    stabilityEvents: IStabilityEvent[];
 }
 
 export interface ISumarizationSegment extends ISegment {
     accuracy? : number;
-}
-
-export type TensorSample = number[][];
-
-export interface IPredictionSegment extends ISegment {
-    id: number[];
-    samples : TensorSample[];
 }
 
 export interface ITrack {
@@ -57,6 +49,7 @@ export interface ITrack {
 }
 
 interface IBaseCityGroupObject {
+    type?: number;
     cityId: number;
     date? : number;
 }
@@ -66,15 +59,15 @@ export interface ISumarizingObject extends IBaseCityGroupObject {
 }
 
 export interface ISumarizedObject extends IBaseCityGroupObject {
-    ranges: ISegment[] | ISumarizationSegment[];
+    ranges: ISegment[];
 }
 
 export interface IAccelerometer {
-    id: Number;
-    eventId: Number;
-    currentTime: Number;
+    id: number;
+    eventId: number;
+    currentTime: number;
     x: Axis;
     y: Axis;
     z: Axis;
-    axis: String;
+    axis: string;
 }
